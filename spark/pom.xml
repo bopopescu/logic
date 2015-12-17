@@ -283,7 +283,7 @@
         <enabled>false</enabled>
       </snapshots>
     </repository>
-    <!-- returning unauthorized on some operations -->
+    <!-- returning unauthorized on some operations 
     <repository>
       <id>spring-releases</id>
       <name>Spring Release Repository</name>
@@ -295,7 +295,6 @@
         <enabled>false</enabled>
       </snapshots>
     </repository>
-    <!-- For transitive dependencies brougt by parquet-thrift -->
     <repository>
       <id>twttr-repo</id>
       <name>Twttr Repository</name>
@@ -306,7 +305,7 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-    </repository>
+    </repository> -->
   </repositories>
   <pluginRepositories>
     <pluginRepository>
