@@ -1,0 +1,17 @@
+target/
+bin/
+lib_managed/
+dist/
+src_managed/
+
+
+scalastyle-output.xml
+*.class
+*.DS_Store
+*.war
+*.ear
+*.cache
+hs_err_pid*
+
+.classpath
+.project
