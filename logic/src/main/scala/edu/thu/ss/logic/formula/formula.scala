@@ -68,13 +68,16 @@ case class Exists(variables: Seq[Variable], body: Formula) extends Quantifier {
 
 }
 
-case class Symbol(name: String) {
+case class Symbol(value: String) extends Term {
+  override def getName = "Symbol"
 
-  override def toString: String = name
+  override def toString: String = value
 }
 
 object Symbol {
   implicit def toSymbol(name: String): Symbol = Symbol(name)
+
+  implicit def toString(symbol: Symbol): String = symbol.value
 
 }
 
