@@ -26,7 +26,7 @@ class LogicParserTest extends FunSuite {
   }
 
   test("test associativity") {
-    parseFormula("f1 IMPLY f2 IMPLY f3 IMPLY f4")
+    parseFormula("f1() IMPLY f2() IMPLY f3() IMPLY f4()")
 
   }
 
@@ -51,12 +51,12 @@ class LogicParserTest extends FunSuite {
   }
 
   test("test temporal") {
-    parseFormula("AF ( f1 AND AF g())")
+    parseFormula("AF ( f1() AND AF g())")
 
   }
 
   test("test symbol") {
-    parseFormula("f1 && f2 || g1 -> f3")
+    parseFormula("f1() && f2() || g1() -> f3()")
 
   }
 

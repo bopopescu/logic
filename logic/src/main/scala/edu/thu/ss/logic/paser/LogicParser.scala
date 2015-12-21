@@ -62,6 +62,7 @@ trait LogicKeywords {
   val SORT = "sort"
   val FUNCTION = "function"
   val PREDICATE = "predicate"
+  val FORMULA = "formula"
   val CLASS = "class"
 
   val DEFINITION = "#definition"
@@ -128,7 +129,7 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
     case list1 ~ list2 => (list1, list2)
   }
 
-  def parseDef: Parser[UnresolvedDefinition] = (parseSort | parseFunctionDef | parsePredicateDef)
+  def parseDef: Parser[UnresolvedDefinition] = (parseSort | parseFunctionDef | parsePredicateDef | parseFormulaDef)
 
   def parseSort: Parser[UnresolvedSort] = (DEFINE ~> SORT ~> ident) ~ parseClass ^^ {
     case name ~ clazz => UnresolvedSort(name, clazz)
@@ -141,6 +142,11 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
 
   def parsePredicateDef: Parser[UnresolvedPredicateDef] = (DEFINE ~> PREDICATE ~> ident) ~ parseParameterList ~ parseClass ^^ {
     case name ~ params ~ clazz => UnresolvedPredicateDef(name, params, clazz)
+  }
+
+  def parseFormulaDef: Parser[UnresolvedFormulaDef] = (DEFINE ~> FORMULA ~> ident) ~ ("=" ~> parseFormula) ^^ {
+    case name ~ formula => UnresolvedFormulaDef(name, formula)
+
   }
 
   def parseParameterList: Parser[Seq[UnresolvedParameter]] = "(" ~> repsep(ident ~ ident, ",") <~ ")" ^^ {
@@ -206,21 +212,19 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
       pEG ~> parseUnary ^^ (formula.pEG(_)) |
       pEF ~> parseUnary ^^ (formula.pEF(_)) |
       pEX ~> parseUnary ^^ (formula.pEX(_)) |
-      parseTerm
+      parseBoolTerm
 
-  protected def parseTerm: Parser[Term] = parseFunction |
+  protected def parseFunction: Parser[Term] = ident ~ ("(" ~> repsep(parseTerm, ",") <~ ")") ^^ {
+    case name ~ params =>
+      UnresolvedFunctionCall(name, params)
+  }
+
+  protected def parseBoolTerm: Parser[Term] = parseFunction |
     ident ^^ (Symbol(_)) |
     TRUE ^^ (_ => True) |
-    FALSE ^^ (_ => False) |
-    (stringLit | numericLit) ^^ (Constant(_))
+    FALSE ^^ (_ => False)
 
-  protected def parseFunction: Parser[Term] = ident ~ opt("(" ~> repsep(parseTerm, ",") <~ ")") ^^ {
-    case name ~ params =>
-      if (params.isDefined) {
-        UnresolvedFunctionCall(name, params.get)
-      } else {
-        UnresolvedFunctionCall(name, Nil)
-      }
-  }
+  protected def parseTerm: Parser[Term] = parseBoolTerm |
+    (stringLit | numericLit) ^^ (Constant(_))
 
 }

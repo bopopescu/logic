@@ -12,42 +12,42 @@ trait TemporalFormula {
  */
 
 case class AG(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  override def getName = "AG"
+  override def kind = "AG"
 
 }
 
 case class AF(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  override def getName = "AF"
+  override def kind = "AF"
 
 }
 
 case class AX(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  override def getName = "AX"
+  override def kind = "AX"
 
 }
 
 case class AU(left: Formula, right: Formula, length: Int = 0) extends BinaryFormula with TemporalFormula {
-  override def getName = "AU"
+  override def kind = "AU"
 
 }
 
 case class EG(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  override def getName = "EG"
+  override def kind = "EG"
 
 }
 
 case class EF(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  override def getName = "EF"
+  override def kind = "EF"
 
 }
 
 case class EX(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  override def getName = "EX"
+  override def kind = "EX"
 
 }
 
 case class EU(left: Formula, right: Formula, length: Int = 0) extends BinaryFormula with TemporalFormula {
-  override def getName = "EU"
+  override def kind = "EU"
 
 }
 
@@ -56,42 +56,42 @@ case class EU(left: Formula, right: Formula, length: Int = 0) extends BinaryForm
  */
 
 case class pAG(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  override def getName = "pAG"
+  override def kind = "pAG"
 
 }
 
 case class pAF(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  override def getName = "pAF"
+  override def kind = "pAF"
 
 }
 
 case class pAX(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  override def getName = "pAX"
+  override def kind = "pAX"
 
 }
 
 case class pAU(left: Formula, right: Formula, length: Int = 0) extends BinaryFormula with TemporalFormula {
-  override def getName = "pAU"
+  override def kind = "pAU"
 
 }
 
 case class pEG(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  override def getName = "pEG"
+  override def kind = "pEG"
 
 }
 
 case class pEF(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  override def getName = "pEF"
+  override def kind = "pEF"
 
 }
 
 case class pEX(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  override def getName = "pEX"
+  override def kind = "pEX"
 
 }
 
 case class pEU(left: Formula, right: Formula, length: Int = 0) extends BinaryFormula with TemporalFormula {
-  override def getName = "pEU"
+  override def kind = "pEU"
 
 }
 

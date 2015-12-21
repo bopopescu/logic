@@ -1,9 +1,13 @@
 package edu.thu.ss.logic.formula
 
-abstract class Formula {
+trait ASTNode {
+  def kind: String
+
+}
+
+abstract class Formula extends ASTNode {
   def children: Seq[Formula]
 
-  def getName: String
 }
 
 abstract class BinaryFormula extends Formula {
@@ -12,7 +16,7 @@ abstract class BinaryFormula extends Formula {
 
   override def children: Seq[Formula] = left :: right :: Nil
 
-  override def toString() = s"($left $getName $right)"
+  override def toString() = s"($left $kind $right)"
 
 }
 
@@ -21,27 +25,27 @@ abstract class UnaryFormula extends Formula {
 
   override def children: Seq[Formula] = child :: Nil
 
-  override def toString() = s"$getName $child"
+  override def toString() = s"$kind $child"
 }
 
 case class Not(child: Formula) extends UnaryFormula {
 
-  override def getName: String = "NOT"
+  override def kind: String = "NOT"
 
 }
 
 case class And(left: Formula, right: Formula) extends BinaryFormula {
-  override def getName: String = "AND"
+  override def kind: String = "AND"
 
 }
 
 case class Or(left: Formula, right: Formula) extends BinaryFormula {
-  override def getName: String = "OR"
+  override def kind: String = "OR"
 
 }
 
 case class Imply(left: Formula, right: Formula) extends BinaryFormula {
-  override def getName: String = "IMPLY"
+  override def kind: String = "IMPLY"
 
 }
 
@@ -52,24 +56,24 @@ abstract class Quantifier extends Formula {
   override def children: Seq[Formula] = body :: Nil
 
   override def toString: String = {
-    val variableStr = variables.map(v => s"${v.name} ${v.sort}").mkString(",")
-    s"$getName ${variableStr}.($body)"
+    val variableStr = variables.map(v => s"${v.sort} ${v.name}").mkString(",")
+    s"$kind ${variableStr}.($body)"
   }
 
 }
 
 case class Forall(variables: Seq[Variable], body: Formula) extends Quantifier {
-  override def getName: String = "FORALL"
+  override def kind: String = "FORALL"
 
 }
 
 case class Exists(variables: Seq[Variable], body: Formula) extends Quantifier {
-  override def getName: String = "EXISTS"
+  override def kind: String = "EXISTS"
 
 }
 
 case class Symbol(value: String) extends Term {
-  override def getName = "Symbol"
+  override def kind = "symbol"
 
   override def toString: String = value
 }
@@ -87,25 +91,25 @@ abstract class Term extends Formula {
 }
 
 case class Variable(name: Symbol, sort: Sort) extends Term {
-  override def getName = "VARIABLE"
+  override def kind = "variable"
 
   override def toString = name.toString
 
 }
 
 case class Constant(value: Any) extends Term {
-  override def getName = "CONSTANT"
+  override def kind = "constant"
 
   override def toString = value.toString
 
 }
 
 case object True extends Term {
-  override def getName = "TRUE"
+  override def kind = "true"
 
 }
 
 case object False extends Term {
-  override def getName = "FALSE"
+  override def kind = "false"
 
 }
