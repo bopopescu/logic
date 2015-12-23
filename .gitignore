@@ -11,8 +11,9 @@ scalastyle-output.xml
 *.DS_Store
 *.war
 *.ear
-*.cache
+*.cache*
 hs_err_pid*
+
 
 .classpath
 .project

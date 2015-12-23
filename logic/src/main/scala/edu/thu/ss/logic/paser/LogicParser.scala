@@ -1,26 +1,20 @@
 package edu.thu.ss.logic.paser
 
-import scala.annotation.migration
-import scala.util.parsing.combinator.JavaTokenParsers
+import java.io
+import java.io.BufferedReader
+import java.io.File
+import java.io.FileReader
+import java.io.StringReader
+
+import scala.util.parsing.combinator.lexical.StdLexical
+import scala.util.parsing.combinator.syntactical.StandardTokenParsers
+import scala.util.parsing.input.CharArrayReader._
+import scala.util.parsing.input.StreamReader
+
 import edu.thu.ss.logic.formula
 import edu.thu.ss.logic.formula._
 import edu.thu.ss.logic.formula.Symbol._
 import edu.thu.ss.logic.policy.Rule
-import edu.thu.ss.logic.policy.Rule
-import edu.thu.ss.logic.policy.Policy
-import org.scalatest.enablers.Definition
-import scala.util.parsing.combinator.syntactical.StandardTokenParsers
-import scala.util.parsing.combinator.token.StdTokens
-import scala.util.parsing.combinator.lexical.StdLexical
-import scala.util.parsing.input.CharArrayReader._
-import scala.util.parsing.input.Reader
-import java.io.StringReader
-import java.io
-import scala.util.parsing.combinator.lexical.Lexical
-import scala.util.parsing.input.StreamReader
-import java.io.File
-import java.io.BufferedReader
-import java.io.FileReader
 
 trait LogicKeywords {
 
@@ -93,11 +87,11 @@ class LogicLexical extends StdLexical with LogicKeywords {
  */
 object LogicParser extends StandardTokenParsers with LogicKeywords {
 
-  def parse(in: String): (List[UnresolvedDefinition], List[Rule]) = {
+  def parse(in: String): (Seq[UnresolvedDefinition], Seq[Rule]) = {
     parse(new StringReader(in))
   }
 
-  def parseFile(path: String): (List[UnresolvedDefinition], List[Rule]) = {
+  def parseFile(path: String): (Seq[UnresolvedDefinition], Seq[Rule]) = {
     val file = new File(path)
     if (!file.exists()) {
       throw ParseException(s"No such file: $path.")
@@ -105,7 +99,7 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
     parse(new BufferedReader(new FileReader(file)))
   }
 
-  def parse(in: io.Reader): (List[UnresolvedDefinition], List[Rule]) = {
+  def parse(in: io.Reader): (Seq[UnresolvedDefinition], Seq[Rule]) = {
     try {
       phrase(parseInput)(new lexical.Scanner(StreamReader(in))) match {
         case Success(r, _) => r
@@ -125,77 +119,93 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
 
   lexical.initialize(this.reserved)
 
-  def parseInput: Parser[(List[UnresolvedDefinition], List[Rule])] = (DEFINITION ~> rep(parseDef)) ~ (POLICY ~> rep(parseRule)) ^^ {
-    case list1 ~ list2 => (list1, list2)
-  }
+  def parseInput: Parser[(Seq[UnresolvedDefinition], Seq[Rule])] =
+    (DEFINITION ~> rep(parseDef)) ~ (POLICY ~> rep(parseRule)) ^^ {
+      case list1 ~ list2 => (list1, list2)
+    }
 
-  def parseDef: Parser[UnresolvedDefinition] = (parseSort | parseFunctionDef | parsePredicateDef | parseFormulaDef)
+  def parseDef: Parser[UnresolvedDefinition] =
+    (parseSort | parseFunctionDef | parsePredicateDef | parseFormulaDef)
 
-  def parseSort: Parser[UnresolvedSort] = (DEFINE ~> SORT ~> ident) ~ parseClass ^^ {
-    case name ~ clazz => UnresolvedSort(name, clazz)
-  }
+  protected def parseSort: Parser[UnresolvedSort] =
+    (DEFINE ~> SORT ~> ident) ~ parseClass ^^ {
+      case name ~ clazz => UnresolvedSort(name, clazz)
+    }
 
-  def parseFunctionDef: Parser[UnresolvedFunctionDef] = (DEFINE ~> FUNCTION ~> ident ~ ident) ~ parseParameterList ~ parseClass ^^ {
-    case range ~ name ~ params ~ clazz => UnresolvedFunctionDef(name, params, range, clazz)
+  protected def parseFunctionDef: Parser[UnresolvedFunctionDef] =
+    (DEFINE ~> FUNCTION ~> ident ~ ident) ~ parseParameterList ~ parseClass ^^ {
+      case range ~ name ~ params ~ clazz => UnresolvedFunctionDef(name, params, range, clazz)
+    }
 
-  }
+  protected def parsePredicateDef: Parser[UnresolvedPredicateDef] =
+    (DEFINE ~> PREDICATE ~> ident) ~ parseParameterList ~ parseClass ^^ {
+      case name ~ params ~ clazz => UnresolvedPredicateDef(name, params, clazz)
+    }
 
-  def parsePredicateDef: Parser[UnresolvedPredicateDef] = (DEFINE ~> PREDICATE ~> ident) ~ parseParameterList ~ parseClass ^^ {
-    case name ~ params ~ clazz => UnresolvedPredicateDef(name, params, clazz)
-  }
+  protected def parseFormulaDef: Parser[UnresolvedFormulaDef] =
+    (DEFINE ~> FORMULA ~> ident) ~ ("=" ~> parseFormula) ^^ {
+      case name ~ formula => UnresolvedFormulaDef(name, formula)
+    }
 
-  def parseFormulaDef: Parser[UnresolvedFormulaDef] = (DEFINE ~> FORMULA ~> ident) ~ ("=" ~> parseFormula) ^^ {
-    case name ~ formula => UnresolvedFormulaDef(name, formula)
+  protected def parseParameterList: Parser[Seq[UnresolvedParameter]] =
+    "(" ~> repsep(ident ~ ident, ",") <~ ")" ^^ (
+      _.map {
+        case sort ~ name => UnresolvedParameter(name, sort)
+      })
 
-  }
+  protected def parseClass: Parser[String] =
+    CLASS ~> "=" ~> rep1sep(ident, ".") ^^ (_.mkString("."))
 
-  def parseParameterList: Parser[Seq[UnresolvedParameter]] = "(" ~> repsep(ident ~ ident, ",") <~ ")" ^^ {
-    case list => list.map(v => UnresolvedParameter(v._2, v._1))
-  }
-
+  //rules
   def parseRule: Parser[Rule] = ident ~ (":" ~> parseFormula) ^^ {
     case name ~ formula => Rule(name, formula)
   }
 
   def parseFormula: Parser[Formula] = parseQuantifier
 
-  protected def parseClass: Parser[String] = CLASS ~> "=" ~> rep1sep(ident, ".") ^^ (_.mkString("."))
-
-  protected def matchQuantifier = opt(NOT | NOT_S) ~ (FORALL | EXISTS) ~ rep1sep(ident ~ ident ^^ {
-    case sort ~ variable => new UnresolvedVariable(variable, sort)
-  }, ",") <~ "."
-
-  protected def parseQuantifier: Parser[Formula] = rep(matchQuantifier) ~ parseU ^^ {
-    case list ~ u => {
-      list.foldRight(u) {
-        case ((not ~ qual ~ variables), child) => {
-          val formula = qual.toLowerCase match {
-            case FORALL => Forall(variables, child)
-            case EXISTS => Exists(variables, child)
-          }
-          if (not.isDefined) {
-            Not(formula)
-          } else {
-            formula
+  protected def parseQuantifier: Parser[Formula] =
+    rep(opt(NOT | NOT_S) ~ (FORALL | EXISTS) ~ parseVariableList <~ ".") ~ parseU ^^ {
+      case list ~ u => {
+        list.foldRight(u) {
+          case ((not ~ qual ~ variables), child) => {
+            val formula = qual.toLowerCase match {
+              case FORALL => Forall(variables, child)
+              case EXISTS => Exists(variables, child)
+            }
+            not match {
+              case Some(_) => Not(formula)
+              case None => formula
+            }
           }
         }
       }
     }
-  }
+
+  protected def parseVariableList: Parser[Seq[UnresolvedVariable]] =
+    rep1sep(ident ~ ident, ",") ^^ (_.map {
+      case sort ~ name => new UnresolvedVariable(name, sort)
+    })
 
   //right associative
   protected def parseU: Parser[Formula] =
-    rep1sep(parseImply, AU) ^^ (_.reduceRight { formula.AU(_, _) }) |
-      rep1sep(parseImply, EU) ^^ (_.reduceRight { formula.EU(_, _) }) |
-      rep1sep(parseImply, pAU) ^^ (_.reduceRight { formula.pAU(_, _) }) |
-      rep1sep(parseImply, pEU) ^^ (_.reduceRight { formula.pEU(_, _) })
+    rep1sep(parseImply, AU) ^^
+      (_.reduceRight { formula.AU(_, _) }) |
+      rep1sep(parseImply, EU) ^^
+      (_.reduceRight { formula.EU(_, _) }) |
+      rep1sep(parseImply, pAU) ^^
+      (_.reduceRight { formula.pAU(_, _) }) |
+      rep1sep(parseImply, pEU) ^^
+      (_.reduceRight { formula.pEU(_, _) })
 
   // right associative
-  protected def parseImply: Parser[Formula] = rep1sep(parseOr, IMPLY | IMPLY_S) ^^ (_.reduceRight { Imply(_, _) })
+  protected def parseImply: Parser[Formula] =
+    rep1sep(parseOr, IMPLY | IMPLY_S) ^^ (_.reduceRight { Imply(_, _) })
 
-  protected def parseOr: Parser[Formula] = parseAnd * ((OR | OR_S) ^^^ { Or(_, _) })
+  protected def parseOr: Parser[Formula] =
+    parseAnd * ((OR | OR_S) ^^^ { Or(_, _) })
 
-  protected def parseAnd: Parser[Formula] = parseUnary * ((AND | AND_S) ^^^ { And(_, _) })
+  protected def parseAnd: Parser[Formula] =
+    parseUnary * ((AND | AND_S) ^^^ { And(_, _) })
 
   protected def parseUnary: Parser[Formula] =
     "(" ~> parseFormula <~ ")" |
@@ -214,17 +224,18 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
       pEX ~> parseUnary ^^ (formula.pEX(_)) |
       parseBoolTerm
 
-  protected def parseFunction: Parser[Term] = ident ~ ("(" ~> repsep(parseTerm, ",") <~ ")") ^^ {
-    case name ~ params =>
-      UnresolvedFunctionCall(name, params)
-  }
-
   protected def parseBoolTerm: Parser[Term] = parseFunction |
     ident ^^ (Symbol(_)) |
     TRUE ^^ (_ => True) |
     FALSE ^^ (_ => False)
 
-  protected def parseTerm: Parser[Term] = parseBoolTerm |
-    (stringLit | numericLit) ^^ (Constant(_))
+  protected def parseFunction: Parser[Term] =
+    ident ~ ("(" ~> repsep(parseTerm, ",") <~ ")") ^^ {
+      case name ~ params =>
+        UnresolvedFunctionCall(name, params)
+    }
 
+  protected def parseTerm: Parser[Term] =
+    parseBoolTerm |
+      (stringLit | numericLit) ^^ (Constant(_))
 }

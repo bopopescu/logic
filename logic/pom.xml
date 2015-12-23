@@ -16,7 +16,7 @@
 			<version>3.0.0-M14</version>
 			<scope>test</scope>
 		</dependency>
-
+		<!-- 
 		<dependency>
 			<groupId>org.scala-lang</groupId>
 			<artifactId>scala-compiler</artifactId>
@@ -42,7 +42,7 @@
 			<artifactId>scalap</artifactId>
 			<version>${scala.version}</version>
 		</dependency>
-
+ -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>

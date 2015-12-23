@@ -1,14 +1,18 @@
 #definition
 define sort int class=edu.thu.ss.logic.example.IntSort
-define sort col class=edu.thu.ss.logic.example.ColumnSort
+define sort column class=edu.thu.ss.logic.example.ColumnSort
+
 define function int add(int x, int y) class=edu.thu.ss.logic.example.Add
+
 define predicate isZero(int x) class=edu.thu.ss.logic.example.IsZero
-define predicate equals(int x, col c) class=edu.thu.ss.logic.example.Equals
+define predicate equals(int x, int y) class=edu.thu.ss.logic.example.Equals
+define predicate output(column c) class=edu.thu.ss.logic.example.Output
+define predicate isTrue(bool b) class=edu.thu.ss.logic.example.IsTrue
 
 define formula f1 = isZero(x)
-define formula f2 = f1 or isZero(y)
 
 #policy
-r1: forall int x, int y. AG(f2)
+r1: forall int x. exists int y. EF(equals(x, y) or f1)
 
-r2: forall int x, col y. equals(add(x, x), y) or true
+r2: AG (!output("id"))
+

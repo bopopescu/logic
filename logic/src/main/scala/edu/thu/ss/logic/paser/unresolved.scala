@@ -1,20 +1,14 @@
 package edu.thu.ss.logic.paser
 
-import edu.thu.ss.logic.formula.Formula
-import edu.thu.ss.logic.formula.Symbol
-import edu.thu.ss.logic.formula.Term
-import edu.thu.ss.logic.formula.Variable
-import edu.thu.ss.logic.formula.ASTNode
-import edu.thu.ss.logic.policy.FormulaWrapper
+import edu.thu.ss.logic.formula._
 
-trait UnresolvedElement extends ASTNode {
+trait UnresolvedElement {
   def name: Symbol
 
 }
 
 case class UnresolvedFunctionCall(name: Symbol, parameters: Seq[Term]) extends Term with UnresolvedElement {
-
-  override def kind = name.toString
+  val kind = name.toString
 
   override def toString = s"$kind(${parameters.mkString(", ")})"
 }
@@ -24,21 +18,28 @@ class UnresolvedVariable(override val name: Symbol, val usort: Symbol) extends V
   override def toString = name.toString
 }
 
-abstract class UnresolvedDefinition extends UnresolvedElement {
+abstract class UnresolvedDefinition extends ASTNode with UnresolvedElement {
   def clazz: String
 
 }
 
 case class UnresolvedSort(name: Symbol, clazz: String) extends UnresolvedDefinition {
-  override def toString = name.toString
+  val kind = "sort"
 
-  override def kind = "sort"
+  override def toString = name
 
+}
+
+case class UnresolvedParameter(name: Symbol, sort: Symbol) extends UnresolvedElement {
+  val kind = "parameter"
+
+  override def toString = s"$sort $name"
 }
 
 abstract class UnresolvedBaseFunctionDef extends UnresolvedDefinition {
   def parameters: Seq[UnresolvedParameter]
   def range: Symbol
+
   override def toString = s"$range $name(${parameters.mkString(", ")})"
 
 }
@@ -46,27 +47,20 @@ abstract class UnresolvedBaseFunctionDef extends UnresolvedDefinition {
 case class UnresolvedFunctionDef(name: Symbol, parameters: Seq[UnresolvedParameter], range: Symbol, clazz: String) extends UnresolvedBaseFunctionDef {
   override def toString = s"$range $name(${parameters.mkString(", ")})"
 
-  override def kind = "function"
+  val kind = "function"
 }
 
 case class UnresolvedPredicateDef(name: Symbol, parameters: Seq[UnresolvedParameter], clazz: String) extends UnresolvedBaseFunctionDef {
-  val range: Symbol = ""
+  val range: Symbol = "bool"
 
   override def toString = s"bool $name(${parameters.mkString(", ")})"
 
-  override def kind = "predicate"
+  val kind = "predicate"
 
 }
 
-case class UnresolvedFormulaDef(name: Symbol, formula: Formula) extends UnresolvedDefinition{
-  override val clazz = ""
-  override val kind = "formula"
+case class UnresolvedFormulaDef(name: Symbol, formula: Formula) extends UnresolvedDefinition {
+  val clazz = ""
+
+  val kind = "formula"
 }
-
-case class UnresolvedParameter(name: Symbol, sort: Symbol) extends UnresolvedElement {
-  val kind = "Parameter"
-
-  override def toString = s"$sort $name"
-}
-
-
