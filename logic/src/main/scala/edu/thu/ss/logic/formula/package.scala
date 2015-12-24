@@ -4,22 +4,25 @@ package edu.thu.ss.logic
 import edu.thu.ss.logic.formula.True
 import edu.thu.ss.logic.formula.False
 import edu.thu.ss.logic.definition.ISort
+import java.lang.{ Boolean => JBoolean }
 
-class BoolSortImpl extends ISort[Boolean] {
+class BoolSortImpl extends ISort[JBoolean] {
 
-  val valueClass = classOf[Boolean]
+  val valueClass = classOf[JBoolean]
 
-  def valid(value: String): Boolean = {
-    value == True.toString() || value == False.toString()
+  def validInput(input: String): Boolean = {
+    input == True.toString() || input == False.toString()
   }
 
-  def toValue(value: String): Boolean = {
-    value == True.toString()
+  def toValue(input: String): JBoolean = {
+    input == True.toString()
   }
+
+  protected def _validValue(value: JBoolean) = true
 
   override val finite = true
 
-  override val values = true :: false :: Nil
+  override val values: Seq[JBoolean] = List(true, false)
 
 }
 

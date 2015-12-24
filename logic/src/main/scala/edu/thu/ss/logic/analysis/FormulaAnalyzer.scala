@@ -63,10 +63,10 @@ case class CheckFormulaUnique() extends FormulaAnalyzer {
     })
 
     formulas.foreach(formula => {
-      val variables = formula.flatMap({
-        case quantifier: Quantifier => quantifier.variables
-        case _ => Nil
-      })
+      val variables = formula.map({
+        case quantifier: Quantifier => quantifier.variable
+        case _ => null
+      }).filter { _ != null }
       LogicUtils.checkUnique(variables, _.asInstanceOf[Variable].name, {
         case v: Variable => {
           setError(
@@ -116,27 +116,24 @@ case class FormulaResolver() extends SequentialAnalyzer {
       }
     }, {
       //remove variables from context
-      case quantifier: Quantifier =>
-        quantifier.variables.foreach { v => context.remove(v.name) }
+      case quantifier: Quantifier => context.remove(quantifier.variable.name)
     })
 
   }
 
   private def resolveQuantifier(quantifier: Quantifier): Quantifier = {
-    val variables = quantifier.variables.map({
-      case uvar: UnresolvedVariable => {
-        definitions.lookupSort(uvar.usort) match {
-          case Some(sort) => Variable(uvar.name, sort)
-          case None =>
-            setError(s"Undefined sort ${uvar.usort} for ${uvar.kind} ${uvar.name} in ${curFormula.kind} ${curFormula.name}")
-            Variable(uvar.name, null)
-        }
-      }
-    })
-    variables.foreach(v => context.put(v.name, v))
+    val uvar = quantifier.variable.asInstanceOf[UnresolvedVariable]
+    val variable = definitions.lookupSort(uvar.usort) match {
+      case Some(sort) => Variable(uvar.name, sort)
+      case None =>
+        setError(s"Undefined sort ${uvar.usort} for ${uvar.kind} ${uvar.name} in ${curFormula.kind} ${curFormula.name}")
+        Variable(uvar.name, null)
+    }
+
+    context.put(variable.name, variable)
     quantifier match {
-      case forall: Forall => Forall(variables, forall.body)
-      case exist: Exists => Exists(variables, exist.body)
+      case forall: Forall => Forall(variable, forall.body)
+      case exist: Exists => Exists(variable, exist.body)
     }
   }
 
@@ -194,7 +191,7 @@ case class FormulaResolver() extends SequentialAnalyzer {
       case variable: Variable =>
         checkSort(variable.sort, param.sort)
 
-      case const: Constant => if (!param.sort.valid(const.value)) {
+      case const: Constant => if (!param.sort.validInput(const.value)) {
         setError(s"${const.value} is not a valid value of ${param.sort.kind} ${param.sort.name} in ${call} of ${curFormula.kind} ${curFormula.name}.")
       }
 

@@ -7,17 +7,29 @@ trait IDefinition {
 
 }
 
-trait ISort[T] extends IDefinition {
+trait ISort[T <: AnyRef] extends IDefinition {
 
   val valueClass: Class[T]
 
-  def valid(value: String): Boolean
+  def validInput(input: String): Boolean
 
-  def toValue(value: String): T
+  def validValue(value: Any): Boolean = {
+    try {
+      _validValue(valueClass.cast(value))
+    } catch {
+      case t: ClassCastException =>
+        t.printStackTrace()
+        false
+    }
+  }
+
+  def toValue(input: String): T
 
   def values: Seq[T] = throw new UnsupportedOperationException
 
   def finite: Boolean = false
+
+  protected def _validValue(value: T): Boolean
 
 }
 

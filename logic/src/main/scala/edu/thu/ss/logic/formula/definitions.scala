@@ -6,6 +6,8 @@ import edu.thu.ss.logic.paser.AnalysisException
 import edu.thu.ss.logic.definition._
 import java.lang.reflect.Method
 import edu.thu.ss.logic.util.LogicUtils
+import edu.thu.ss.logic.paser.IllegalValueException
+import java.{ lang => java }
 
 abstract class LogicDefinition extends ASTNode {
   def name: Symbol
@@ -40,11 +42,19 @@ abstract class BaseFunctionDef[T <: IBaseFunction] extends LogicDefinition with 
   def range: Sort
   def domain: Seq[Sort] = parameters.map(_.sort)
 
-  def impl = clazz.getConstructor().newInstance()
+  def impl: T = clazz.getConstructor().newInstance().asInstanceOf[T]
 
   lazy val evaluateMethod: Method =
     clazz.getMethod("evaluate", domain.map { _.valueClass }: _*)
 
+  def evaluate(impl: IBaseFunction, params: Seq[Any]): Any = {
+    val objs = params.map { _.asInstanceOf[AnyRef] }
+    val value = evaluateMethod.invoke(impl, objs: _*)
+    if (!range.validValue(value)) {
+      throw new IllegalValueException(s"$value returned by function ${this} is not a valid value of ${range.kind} ${range.name}.")
+    }
+    value
+  }
 }
 
 case class FunctionDef(name: Symbol, parameters: Seq[Parameter], range: Sort, clazz: Class[_ <: IFunction]) extends BaseFunctionDef[IFunction] {

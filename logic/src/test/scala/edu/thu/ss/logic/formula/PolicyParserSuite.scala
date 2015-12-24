@@ -6,6 +6,11 @@ import java.io.StringReader
 import scala.util.parsing.combinator.Parsers
 import java.io.FileReader
 import edu.thu.ss.logic.paser.PolicyParser
+import edu.thu.ss.logic.evaluation.EvaluationContext
+import edu.thu.ss.logic.evaluation.FormulaEvaluator
+import edu.thu.ss.logic.example.IntSort
+import edu.thu.ss.logic.definition.ISort
+import scala.reflect.runtime.universe._
 
 class PolicyParserTest extends FunSuite {
 

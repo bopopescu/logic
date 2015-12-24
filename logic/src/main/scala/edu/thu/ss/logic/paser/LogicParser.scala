@@ -72,7 +72,7 @@ class LogicLexical extends StdLexical with LogicKeywords {
     reserved ++= keywords
   }
 
-  delimiters += ("(", ")", ",", ":", ".", "=", NOT_S, AND_S, OR_S, IMPLY_S)
+  delimiters += ("(", ")", ",", ":", ".", "=", "+", "-", NOT_S, AND_S, OR_S, IMPLY_S)
 
   override def identChar = letter | elem('_') | elem('#')
 
@@ -80,6 +80,27 @@ class LogicLexical extends StdLexical with LogicKeywords {
     val token = name.toLowerCase
     if (reserved contains token) Keyword(token) else Identifier(name)
   }
+
+  override lazy val token: Parser[Token] =
+    (identChar ~ (identChar | digit).* ^^
+      { case first ~ rest => processIdent((first :: rest).mkString) }
+      | digit.* ~ identChar ~ (identChar | digit).* ^^
+      { case first ~ middle ~ rest => processIdent((first ++ (middle :: rest)).mkString) }
+      | rep1(digit) ~ ('.' ~> digit.*).? ^^ {
+        case i ~ None => NumericLit(i.mkString)
+        case i ~ Some(d) => NumericLit(i.mkString + "." + d.mkString)
+      }
+      | '\'' ~> chrExcept('\'', '\n', EofCh).* <~ '\'' ^^
+      { case chars => StringLit(chars mkString "") }
+      | '"' ~> chrExcept('"', '\n', EofCh).* <~ '"' ^^
+      { case chars => StringLit(chars mkString "") }
+      | '`' ~> chrExcept('`', '\n', EofCh).* <~ '`' ^^
+      { case chars => Identifier(chars mkString "") }
+      | EofCh ^^^ EOF
+      | '\'' ~> failure("unclosed string literal")
+      | '"' ~> failure("unclosed string literal")
+      | delim
+      | failure("illegal character"))
 }
 
 /**
@@ -166,17 +187,29 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
   protected def parseQuantifier: Parser[Formula] =
     rep(opt(NOT | NOT_S) ~ (FORALL | EXISTS) ~ parseVariableList <~ ".") ~ parseU ^^ {
       case list ~ u => {
-        list.foldRight(u) {
-          case ((not ~ qual ~ variables), child) => {
+        val transformed = list.flatMap {
+          case not ~ qual ~ variables =>
+            var first = true
+            variables.map { v =>
+              val _not = if (first) {
+                first = false
+                not
+              } else {
+                None
+              }
+              (_not, qual, v)
+            }
+        }
+        transformed.foldRight(u) {
+          case ((not, qual, variable), child) =>
             val formula = qual.toLowerCase match {
-              case FORALL => Forall(variables, child)
-              case EXISTS => Exists(variables, child)
+              case FORALL => Forall(variable, child)
+              case EXISTS => Exists(variable, child)
             }
             not match {
               case Some(_) => Not(formula)
               case None => formula
             }
-          }
         }
       }
     }
@@ -237,5 +270,15 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
 
   protected def parseTerm: Parser[Term] =
     parseBoolTerm |
-      (stringLit | numericLit) ^^ (Constant(_))
+      (stringLit | number) ^^ (Constant(_))
+
+  protected lazy val number: Parser[String] =
+    ("-").? ~ numericLit ^^ {
+      case sign ~ number =>
+        sign match {
+          case Some(s) => s + number
+          case None => number
+        }
+    }
+
 }

@@ -2,6 +2,7 @@ package edu.thu.ss.logic.formula
 
 import edu.thu.ss.logic.formula._
 import edu.thu.ss.logic.util.LogicUtils
+import edu.thu.ss.logic.definition.IBaseFunction
 
 case class Not(child: Formula) extends UnaryFormula {
   val kind = "NOT"
@@ -24,24 +25,23 @@ case class Imply(left: Formula, right: Formula) extends BinaryFormula {
 }
 
 abstract class Quantifier extends UnaryFormula {
-  def variables: Seq[Variable]
+  def variable: Variable
   def body: Formula
 
   val child = body
 
   override def toString: String = {
-    val variableStr = variables.map(v => s"${v.sort} ${v.name}").mkString(",")
-    s"$kind ${variableStr}.($body)"
+    s"$kind ${variable}.($body)"
   }
 
 }
 
-case class Forall(variables: Seq[Variable], body: Formula) extends Quantifier {
+case class Forall(variable: Variable, body: Formula) extends Quantifier {
   val kind = "forall"
 
 }
 
-case class Exists(variables: Seq[Variable], body: Formula) extends Quantifier {
+case class Exists(variable: Variable, body: Formula) extends Quantifier {
   val kind = "exists"
 
 }
@@ -82,7 +82,7 @@ case class Constant(value: String) extends Term {
 }
 
 abstract class BaseFunctionCall extends Term {
-  def definition: BaseFunctionDef[_]
+  def definition: BaseFunctionDef[_ <: IBaseFunction]
   def parameters: Seq[Term]
 
   override def toString = s"${definition.name}(${parameters.mkString(", ")})"

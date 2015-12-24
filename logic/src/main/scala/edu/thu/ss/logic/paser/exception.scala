@@ -19,3 +19,7 @@ class TreeNodeException[Type <: TreeNode[_]](
     s"${super.getMessage}, tree:${if (treeString contains "\n") "\n" else " "}$tree"
   }
 }
+
+case class IllegalValueException(msg: String) extends Exception(msg) {
+
+}

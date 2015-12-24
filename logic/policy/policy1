@@ -12,7 +12,11 @@ define predicate isTrue(bool b) class=edu.thu.ss.logic.example.IsTrue
 define formula f1 = isZero(x)
 
 #policy
-r1: forall int x. exists int y. EF(equals(x, y) or f1)
+//r1: not forall int x, int y. EF(equals(x, y) or f1)
 
-r2: AG (!output("id"))
+//r2: AG (!output("id"))
 
+//r3: not AG (isZero(0))
+
+r4: isZero(1) or isZero(0)
+r5: isZero(add(-1, 1))
