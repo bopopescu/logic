@@ -35,8 +35,7 @@ abstract class TreeNode[BaseType <: TreeNode[BaseType]] extends ASTNode with Pro
    */
   def foreach(f: BaseType => Unit): Unit = {
     f(this)
-    children.foreach(f(_))
-
+    children.foreach(_.foreach(f))
   }
 
   /**

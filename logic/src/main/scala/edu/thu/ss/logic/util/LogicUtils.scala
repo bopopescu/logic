@@ -4,10 +4,18 @@ import scala.collection.mutable
 import scala.reflect.runtime.universe._
 import edu.thu.ss.logic.example.IntSort
 import edu.thu.ss.logic.definition.ISort
+import java.{ lang => java }
 
 object LogicUtils {
 
   val mirror = runtimeMirror(getClass.getClassLoader)
+
+  private val numerics = List(classOf[Int], classOf[Short], classOf[Double], classOf[Float],
+    classOf[Long], classOf[Byte], classOf[Boolean], classOf[java.Number], classOf[java.Boolean])
+
+  def isNumericalValue(value: Any): Boolean = {
+    numerics.exists { _.isAssignableFrom(value.getClass) }
+  }
 
   private def isNumerical(value: String, test: String => Any): Boolean = {
     try {
@@ -34,21 +42,6 @@ object LogicUtils {
         set.add(id)
       }
     })
-  }
-
-  def getTypeTag[T: TypeTag](obj: T) = typeTag[T]
-
-  def getParameterizedType(obj: Any, clazz: Class[_]): Class[_] = {
-    val objTag = getTypeTag(obj)
-
-    val symbol = mirror.staticClass(clazz.getName)
-
-    val TypeRef(_, _, params) = objTag.tpe.baseType(symbol)
-    if (params.length == 0) {
-      throw new IllegalArgumentException
-    }
-    mirror.runtimeClass(params.head)
-
   }
 
 }

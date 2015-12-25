@@ -2,20 +2,23 @@ package edu.thu.ss.logic.definition
 
 import edu.thu.ss.logic.formula.True
 import edu.thu.ss.logic.formula.False
+import java.{ lang => java }
 
 trait IDefinition {
 
 }
 
-trait ISort[T <: AnyRef] extends IDefinition {
+trait ISort[T] extends IDefinition {
 
   val valueClass: Class[T]
 
   def validInput(input: String): Boolean
 
+  def parseInput(input: String): T
+
   def validValue(value: Any): Boolean = {
     try {
-      _validValue(valueClass.cast(value))
+      _validValue(value.asInstanceOf[T])
     } catch {
       case t: ClassCastException =>
         t.printStackTrace()
@@ -23,9 +26,7 @@ trait ISort[T <: AnyRef] extends IDefinition {
     }
   }
 
-  def toValue(input: String): T
-
-  def values: Seq[T] = throw new UnsupportedOperationException
+  def values: Traversable[T] = throw new UnsupportedOperationException
 
   def finite: Boolean = false
 
@@ -34,6 +35,7 @@ trait ISort[T <: AnyRef] extends IDefinition {
 }
 
 trait IBaseFunction {
+  //TODO add node
 }
 
 trait IFunction extends IBaseFunction {
@@ -42,4 +44,9 @@ trait IFunction extends IBaseFunction {
 
 trait IPredicate extends IBaseFunction {
 
+  def finite(index: Int): Boolean = false
+
+  def quantifiedValues(index: Int, otherParams: Seq[Any]): Seq[Any] = throw new UnsupportedOperationException
+
 }
+

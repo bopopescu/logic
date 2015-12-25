@@ -4,6 +4,14 @@ import scala.collection.mutable
 import edu.thu.ss.logic.formula._
 import edu.thu.ss.logic.paser.{ UnresolvedFunctionCall, UnresolvedVariable }
 import edu.thu.ss.logic.util.LogicUtils
+import edu.thu.ss.logic.paser.UnresolvedFunctionCall
+import edu.thu.ss.logic.paser.UnresolvedConstant
+import edu.thu.ss.logic.paser.UnresolvedFunctionCall
+import edu.thu.ss.logic.paser.UnresolvedFunctionCall
+import edu.thu.ss.logic.paser.UnresolvedFunctionCall
+import edu.thu.ss.logic.paser.UnresolvedConstant
+import edu.thu.ss.logic.definition.IBaseFunction
+import scala.collection.mutable.ListBuffer
 
 abstract class FormulaAnalyzer extends Analyzer[NamedFormula] {
 
@@ -94,7 +102,7 @@ case class FormulaResolver() extends SequentialAnalyzer {
         resolveQuantifier(quantifier)
       }
       case ufunc: UnresolvedFunctionCall => {
-        val call = resolveTerm(ufunc)
+        val call = resolveFunctionCall(ufunc)
         call match {
           case func: FunctionCall => {
             //only predicate is allowed
@@ -137,65 +145,118 @@ case class FormulaResolver() extends SequentialAnalyzer {
     }
   }
 
-  private def resolveTerm(term: Term): Term = {
-    term match {
-      case ufunc: UnresolvedFunctionCall => {
-        val params = ufunc.parameters.map(resolveTerm(_))
-        val call = if (definitions.lookupFunction(ufunc.name).isDefined) {
-          FunctionCall(definitions.lookupFunction(ufunc.name).get, params)
-        } else if (definitions.lookupPredicate(ufunc.name).isDefined) {
-          PredicateCall(definitions.lookupPredicate(ufunc.name).get, params)
-        } else {
-          setError(s"Undefined function ${ufunc.name} in ${curFormula.kind} ${curFormula.name}")
-        }
-        checkParameters(call)
-        call
+  private def resolveFunctionCall(ufunc: UnresolvedFunctionCall): BaseFunctionCall = {
+
+    def resolveFunctionCall(funcDef: BaseFunctionDef[_ <: IBaseFunction], call: Seq[Term] => BaseFunctionCall): BaseFunctionCall = {
+      if (funcDef.parameters.length != ufunc.parameters.length) {
+        setError(s"Incorrect number of parameters for ${ufunc.kind} ${funcDef} in ${curFormula.kind} ${curFormula.name}")
+      } else {
+        val paramDef = funcDef.parameters.iterator
+        val params = ufunc.parameters.map { param => resolveParameter(param, paramDef.next, funcDef) }
+        call(params)
       }
-      case uvar: Symbol => {
+    }
+
+    if (definitions.lookupFunction(ufunc.name).isDefined) {
+      val functionDef = definitions.lookupFunction(ufunc.name).get
+      resolveFunctionCall(functionDef, FunctionCall(functionDef, _))
+    } else if (definitions.lookupPredicate(ufunc.name).isDefined) {
+      val predicateDef = definitions.lookupPredicate(ufunc.name).get
+      resolveFunctionCall(predicateDef, PredicateCall(predicateDef, _))
+    } else {
+      setError(s"Undefined function ${ufunc.name} in ${curFormula.kind} ${curFormula.name}")
+    }
+  }
+
+  private def resolveParameter(param: Term, paramDef: Parameter, funcDef: BaseFunctionDef[_ <: IBaseFunction]): Term = {
+    def checkSort(provided: Sort) {
+      if (provided != paramDef.sort) {
+        setError(s"Incompatible argument for ${paramDef.kind} ${paramDef.name} (expected: ${paramDef.sort.name}, provided: ${provided.name}) in ${funcDef.kind} ${funcDef} for ${curFormula.kind} ${curFormula.name}")
+      }
+    }
+
+    param match {
+      case ufunc: UnresolvedFunctionCall =>
+        val func = resolveFunctionCall(ufunc)
+        checkSort(func.definition.range)
+        func
+
+      case uvar: Symbol =>
         context.get(uvar) match {
-          case Some(v) => v
+          case Some(v) =>
+            checkSort(v.sort)
+            v
           case None =>
             setError(s"Undefined variable ${uvar} in ${curFormula.kind} ${curFormula.name}")
         }
+      case True | False =>
+        checkSort(boolSort)
+        param
+      case const: UnresolvedConstant =>
+        if (!paramDef.sort.validInput(const.value)) {
+          setError(s"${const.value} is not a valid value for ${paramDef.kind} ${paramDef.name} in ${funcDef.kind} ${funcDef} of ${curFormula.kind} ${curFormula.name}.")
+        } else {
+          Constant(paramDef.sort.parseInput(const.value))
+        }
+    }
+  }
+}
+
+case class CheckDecidability() extends SequentialAnalyzer {
+  protected def analyzeFormula() {
+    curFormula.foreach {
+      case quantifier: Quantifier => {
+        var decidable = false
+        val variable = quantifier.variable
+        if (variable.sort.finite) {
+          decidable = true
+        }
+        //try to resolve quantified predicate anyway
+        val pred =
+          quantifier match {
+            case forall: Forall => getQuantifiedPredicate(forall.child, classOf[Imply], variable)
+            case exists: Exists => getQuantifiedPredicate(exists.child, classOf[And], variable)
+          }
+        if (pred.isDefined) {
+          decidable = true
+          quantifier.quantifiedPredicate = pred.get
+        }
+        if (!decidable) {
+          setError(
+            s"${curFormula.kind} ${curFormula.name} is undecidable since ${variable.kind} ${variable.name} has inifite sort. Please add a proper quantified predicate for ${variable.kind} ${variable.name}.")
+        }
       }
-      case const: Constant => const
+      case _ =>
     }
   }
 
-  private def checkParameters(call: BaseFunctionCall) {
-    val definition = call.definition
-    if (call.parameters.length != definition.parameters.size) {
-      setError(s"Incorrect number of parameters for ${call.kind} ${definition} in ${curFormula.kind} ${curFormula.name}")
-      return
+  protected def getQuantifiedPredicate[T <: BinaryFormula](body: Formula, clazz: Class[T], variable: Variable): Option[PredicateCall] = {
+    if (!clazz.isInstance(body)) {
+      return None
     }
+    val casted = clazz.cast(body)
+    getQuantifiedPredicate(casted.left, variable)
+  }
 
-    var i = 0
-    while (i < call.parameters.length) {
-      val term = call.parameters(i)
-      val param = definition.parameters(i)
-      checkParameter(term, param, call)
-      i += 1
+  protected def getQuantifiedPredicate(formula: Formula, variable: Variable): Option[PredicateCall] = {
+    formula match {
+      case And(left, right) =>
+        val leftPred = getQuantifiedPredicate(left, variable)
+        if (leftPred.isDefined) {
+          leftPred
+        } else {
+          getQuantifiedPredicate(right, variable)
+        }
+      case pred: PredicateCall if (checkQuantifiedPredicate(pred, variable)) =>
+        Some(pred)
+      case _ => None
     }
   }
 
-  private def checkParameter(term: Term, param: Parameter, call: BaseFunctionCall) {
-    def checkSort(sort1: Sort, sort2: Sort) {
-      if (sort1 != sort2) {
-        setError(s"Incompatible argument for ${param.kind} ${param.name} (expected: ${sort2.name}, provided: ${sort1.name}) in ${call.kind} ${call.definition} for ${curFormula.kind} ${curFormula.name}")
-      }
-    }
-
-    term match {
-      case func: BaseFunctionCall =>
-        checkSort(func.definition.range, param.sort)
-      case variable: Variable =>
-        checkSort(variable.sort, param.sort)
-
-      case const: Constant => if (!param.sort.validInput(const.value)) {
-        setError(s"${const.value} is not a valid value of ${param.sort.kind} ${param.sort.name} in ${call} of ${curFormula.kind} ${curFormula.name}.")
-      }
-
-    }
+  protected def checkQuantifiedPredicate(predicate: PredicateCall, variable: Variable): Boolean = {
+    val index = predicate.parameters.indexOf(variable)
+    index >= 0 && predicate.definition.impl.finite(index)
   }
+
 }
 

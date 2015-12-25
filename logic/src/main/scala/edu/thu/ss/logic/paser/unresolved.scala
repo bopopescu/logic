@@ -64,3 +64,8 @@ case class UnresolvedFormulaDef(name: Symbol, formula: Formula) extends Unresolv
 
   val kind = "formula"
 }
+
+case class UnresolvedConstant(value: String) extends Term {
+
+  val kind = "constant"
+}

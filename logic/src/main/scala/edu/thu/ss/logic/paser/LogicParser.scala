@@ -270,7 +270,7 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
 
   protected def parseTerm: Parser[Term] =
     parseBoolTerm |
-      (stringLit | number) ^^ (Constant(_))
+      (stringLit | number) ^^ (UnresolvedConstant(_))
 
   protected lazy val number: Parser[String] =
     ("-").? ~ numericLit ^^ {

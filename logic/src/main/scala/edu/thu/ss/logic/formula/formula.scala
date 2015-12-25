@@ -19,7 +19,7 @@ abstract class BinaryFormula extends Formula {
   def left: Formula
   def right: Formula
 
-  val children: Seq[Formula] = left :: right :: Nil
+  lazy val children: Seq[Formula] = left :: right :: Nil
 
   override def toString = s"($left $kind $right)"
 }
@@ -33,7 +33,7 @@ abstract class UnaryFormula extends Formula {
 }
 
 abstract class Term extends Formula {
-  val children: Seq[Formula] = Nil
+  lazy val children: Seq[Formula] = Nil
 
 }
 

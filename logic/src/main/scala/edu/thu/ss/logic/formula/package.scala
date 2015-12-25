@@ -4,25 +4,24 @@ package edu.thu.ss.logic
 import edu.thu.ss.logic.formula.True
 import edu.thu.ss.logic.formula.False
 import edu.thu.ss.logic.definition.ISort
-import java.lang.{ Boolean => JBoolean }
 
-class BoolSortImpl extends ISort[JBoolean] {
+class BoolSortImpl extends ISort[Boolean] {
 
-  val valueClass = classOf[JBoolean]
+  val valueClass = classOf[Boolean]
 
   def validInput(input: String): Boolean = {
-    input == True.toString() || input == False.toString()
+    input == "true" || input == "false"
   }
 
-  def toValue(input: String): JBoolean = {
+  def parseInput(input: String): Boolean = {
     input == True.toString()
   }
 
-  protected def _validValue(value: JBoolean) = true
+  protected def _validValue(value: Boolean) = true
 
   override val finite = true
 
-  override val values: Seq[JBoolean] = List(true, false)
+  override val values = Set(true, false)
 
 }
 
@@ -34,7 +33,7 @@ package object formula {
 
   val boolSort = new Sort("bool", classOf[BoolSortImpl])
 
-  val True = Constant("true")
+  val True = Constant(true)
 
-  val False = Constant("false")
+  val False = Constant(false)
 }

@@ -30,8 +30,10 @@ abstract class Quantifier extends UnaryFormula {
 
   val child = body
 
+  var quantifiedPredicate: PredicateCall = null
+
   override def toString: String = {
-    s"$kind ${variable}.($body)"
+    s"$kind ${variable}. $body"
   }
 
 }
@@ -66,16 +68,14 @@ case class Variable(name: Symbol, sort: Sort) extends Term {
 
 }
 
-case class Constant(value: String) extends Term {
+case class Constant(value: Any) extends Term {
   val kind = "constant"
 
   override def toString = {
-    if (value == True.value || value == True.value) {
-      value
-    } else if (LogicUtils.isNumerical(value)) {
-      value
+    if (LogicUtils.isNumericalValue(value)) {
+      value.toString
     } else {
-      '"' + value + '"'
+      '"' + value.toString + '"'
     }
   }
 

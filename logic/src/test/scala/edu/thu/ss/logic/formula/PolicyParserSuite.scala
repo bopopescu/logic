@@ -21,4 +21,8 @@ class PolicyParserTest extends FunSuite {
     println(policy)
   }
 
+  test("test2") {
+
+  }
+
 }

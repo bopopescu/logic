@@ -5,46 +5,58 @@ import edu.thu.ss.logic.definition.IFunction
 import edu.thu.ss.logic.definition.IPredicate
 import edu.thu.ss.logic.formula.Sort
 import edu.thu.ss.logic.util.LogicUtils
-import java.lang.{ Integer => JInt, Boolean => JBoolean }
 
-class IntSort extends ISort[JInt] {
-  val valueClass = classOf[JInt]
+class IntSort extends ISort[Int] {
+  val valueClass = classOf[Int]
 
   def validInput(input: String): Boolean = LogicUtils.isInt(input)
 
-  def toValue(value: String): JInt = value.toInt
+  def parseInput(value: String): Int = value.toInt
 
-  def _validValue(value: JInt): Boolean = true
+  def _validValue(value: Int): Boolean = true
 }
 
 class ColumnSort extends ISort[String] {
+  private val columns = Set("c1", "c2", "c3", "c4", "c5")
+
   val valueClass = classOf[String]
 
-  def validInput(value: String): Boolean = true
+  def validInput(value: String): Boolean = columns.contains(value)
 
-  def toValue(value: String): String = value
+  def parseInput(value: String): String = value
 
-  def _validValue(value: String): Boolean = true
+  def _validValue(value: String): Boolean = columns.contains(value)
+
+  override val finite = true
+
+  override val values = columns
 }
 
 class Add extends IFunction {
-  def evaluate(x: JInt, y: JInt): JInt = x + y
+  def evaluate(x: Int, y: Int): Int = x + y
 }
 
 class IsZero extends IPredicate {
-  def evaluate(x: JInt): JBoolean = x == 0
+  def evaluate(x: Int): Boolean = x == 0
 
 }
 
 class Equals extends IPredicate {
-  def evaluate(x: JInt, y: JInt): JBoolean = x == y
+  def evaluate(x: Int, y: Int): Boolean = x == y
+
+  override def finite(index: Int) = true
+
+  override def quantifiedValues(index: Int, otherParams: Seq[Any]): Seq[Any] = {
+    assert(otherParams.length == 1)
+    otherParams
+  }
 }
 
 class IsTrue extends IPredicate {
-  def evaluate(value: JBoolean): JBoolean = value == true
+  def evaluate(value: Boolean): Boolean = value == true
 }
 
 class Output extends IPredicate {
-  def evaluate(column: String): JBoolean = true
+  def evaluate(column: String): Boolean = true
 
 }
