@@ -1,6 +1,6 @@
 package edu.thu.ss.logic.paser
 
-import edu.thu.ss.logic.formula.TreeNode
+import edu.thu.ss.logic.tree.TreeNode
 
 case class ParseException(msg: String) extends Exception(msg) {
 }

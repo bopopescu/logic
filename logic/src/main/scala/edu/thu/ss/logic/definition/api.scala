@@ -3,6 +3,7 @@ package edu.thu.ss.logic.definition
 import edu.thu.ss.logic.formula.True
 import edu.thu.ss.logic.formula.False
 import java.{ lang => java }
+import edu.thu.ss.logic.model.State
 
 trait IDefinition {
 
@@ -35,7 +36,14 @@ trait ISort[T] extends IDefinition {
 }
 
 trait IBaseFunction {
-  //TODO add node
+  private var state: State = null
+
+  def setState(state: State) {
+    this.state = state
+  }
+
+  def getState = state
+
 }
 
 trait IFunction extends IBaseFunction {

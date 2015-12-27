@@ -10,42 +10,42 @@ trait TemporalFormula {
  */
 
 case class AG(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  val kind = "AG"
+  val nodeName = "AG"
 
 }
 
 case class AF(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  val kind = "AF"
+  val nodeName = "AF"
 
 }
 
 case class AX(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  val kind = "AX"
+  val nodeName = "AX"
 
 }
 
 case class AU(left: Formula, right: Formula, length: Int = 0) extends BinaryFormula with TemporalFormula {
-  val kind = "AU"
+  val nodeName = "AU"
 
 }
 
 case class EG(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  val kind = "EG"
+  val nodeName = "EG"
 
 }
 
 case class EF(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  val kind = "EF"
+  val nodeName = "EF"
 
 }
 
 case class EX(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  val kind = "EX"
+  val nodeName = "EX"
 
 }
 
 case class EU(left: Formula, right: Formula, length: Int = 0) extends BinaryFormula with TemporalFormula {
-  val kind = "EU"
+  val nodeName = "EU"
 
 }
 
@@ -54,42 +54,42 @@ case class EU(left: Formula, right: Formula, length: Int = 0) extends BinaryForm
  */
 
 case class pAG(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  val kind = "pAG"
+  val nodeName = "pAG"
 
 }
 
 case class pAF(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  val kind = "pAF"
+  val nodeName = "pAF"
 
 }
 
 case class pAX(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  val kind = "pAX"
+  val nodeName = "pAX"
 
 }
 
 case class pAU(left: Formula, right: Formula, length: Int = 0) extends BinaryFormula with TemporalFormula {
-  val kind = "pAU"
+  val nodeName = "pAU"
 
 }
 
 case class pEG(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  val kind = "pEG"
+  val nodeName = "pEG"
 
 }
 
 case class pEF(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  val kind = "pEF"
+  val nodeName = "pEF"
 
 }
 
 case class pEX(child: Formula, length: Int = 0) extends UnaryFormula with TemporalFormula {
-  val kind = "pEX"
+  val nodeName = "pEX"
 
 }
 
 case class pEU(left: Formula, right: Formula, length: Int = 0) extends BinaryFormula with TemporalFormula {
-  val kind = "pEU"
+  val nodeName = "pEU"
 
 }
 

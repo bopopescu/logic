@@ -1,10 +1,12 @@
 package edu.thu.ss.logic.formula
 
+import edu.thu.ss.logic.tree.TreeNode
+
 abstract class Formula extends TreeNode[Formula] {
 
 }
 
-trait NamedFormula extends ASTNode {
+trait NamedFormula {
   def name: Symbol
   var formula: Formula
 
@@ -20,8 +22,7 @@ abstract class BinaryFormula extends Formula {
   def right: Formula
 
   lazy val children: Seq[Formula] = left :: right :: Nil
-
-  override def toString = s"($left $kind $right)"
+  override def toString = s"($left $nodeName $right)"
 }
 
 abstract class UnaryFormula extends Formula {
@@ -29,7 +30,7 @@ abstract class UnaryFormula extends Formula {
 
   lazy val children: Seq[Formula] = child :: Nil
 
-  override def toString = s"$kind $child"
+  override def toString = s"$nodeName $child"
 }
 
 abstract class Term extends Formula {

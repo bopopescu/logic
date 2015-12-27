@@ -43,7 +43,7 @@ case class CheckDefinitionUnique() extends DefinitionAnalyzer {
     LogicUtils.checkUnique(udefs, _.asInstanceOf[UnresolvedDefinition].name, {
       case udef: UnresolvedDefinition =>
         setError(
-          s"${udef.kind}'s name ${udef.name} has already been used somewhere else. Please choose another name.")
+          s"${udef.nodeName}'s name ${udef.name} has already been used somewhere else. Please choose another name.")
     })
 
     udefs.withFilter(_.isInstanceOf[UnresolvedBaseFunctionDef]).foreach {
@@ -51,7 +51,7 @@ case class CheckDefinitionUnique() extends DefinitionAnalyzer {
         LogicUtils.checkUnique(ufunc.parameters, _.asInstanceOf[UnresolvedParameter].name, {
           case uparam: UnresolvedParameter =>
             setError(
-              s"Pamarater's name ${uparam.name} has already been used somewhere else in ${ufunc.kind} ${ufunc.name}. Please choose another name.")
+              s"Pamarater's name ${uparam.name} has already been used somewhere else in ${ufunc.nodeName} ${ufunc.name}. Please choose another name.")
         })
     }
 
@@ -75,10 +75,10 @@ case class DefinitionResolver() extends DefinitionAnalyzer {
         val range = definitions.lookupSort(ufunc.range)
         range match {
           case None =>
-            setError(s"Undefined sort ${ufunc.range} for the range of ${ufunc.kind} ${ufunc.name}.")
+            setError(s"Undefined sort ${ufunc.range} for the range of ${ufunc.nodeName} ${ufunc.name}.")
           case Some(r) if (r == boolSort) =>
             //handle a special bool case
-            setError(s"${ufunc.kind} ${ufunc} should not return bool values. Please make it as a predicate.")
+            setError(s"${ufunc.nodeName} ${ufunc} should not return bool values. Please make it as a predicate.")
           case Some(r) =>
             definitions.addFunction(FunctionDef(ufunc.name, params, r, clazz))
         }
@@ -99,17 +99,17 @@ case class DefinitionResolver() extends DefinitionAnalyzer {
         val clazz = Class.forName(udef.clazz)
         udef match {
           case sort: UnresolvedSort if (!classOf[ISort[_]].isAssignableFrom(clazz)) =>
-            setError(s"Class ${udef.clazz} is not a subclass of ISort for ${udef.kind} ${udef.name}.")
+            setError(s"Class ${udef.clazz} is not a subclass of ISort for ${udef.nodeName} ${udef.name}.")
           case func: UnresolvedFunctionDef if (!classOf[IFunction].isAssignableFrom(clazz)) =>
-            setError(s"Class ${udef.clazz} is not a subclass of IFunction for ${udef.kind} ${udef.name}.")
+            setError(s"Class ${udef.clazz} is not a subclass of IFunction for ${udef.nodeName} ${udef.name}.")
           case pred: UnresolvedPredicateDef if (!classOf[IPredicate].isAssignableFrom(clazz)) =>
-            setError(s"Class ${udef.clazz} is not a subclass of IPredicate for ${udef.kind} ${udef}.")
+            setError(s"Class ${udef.clazz} is not a subclass of IPredicate for ${udef.nodeName} ${udef}.")
           case _ => clazz
         }
 
       } catch {
         case e: ClassNotFoundException =>
-          setError(s"Class ${udef.clazz} is not found for ${udef.kind} ${udef.name}.")
+          setError(s"Class ${udef.clazz} is not found for ${udef.nodeName} ${udef.name}.")
       }
     }
 
@@ -123,7 +123,7 @@ case class DefinitionResolver() extends DefinitionAnalyzer {
           Parameter(uparam.name, s)
         }
         case None => {
-          setError(s"Undefined sort ${uparam.sort} for parameter ${uparam.name} in ${udef.kind} ${udef.name}.")
+          setError(s"Undefined sort ${uparam.sort} for parameter ${uparam.name} in ${udef.nodeName} ${udef.name}.")
         }
       }
     })
@@ -143,11 +143,11 @@ case class CheckClassCompatibility() extends DefinitionAnalyzer {
       val returnType = method.getReturnType
       val expectedType = func.range.valueClass
       if (!expectedType.isAssignableFrom(returnType)) {
-        setError(s"Method ${getEvaluateString(func)} returns wrong type (expected: ${expectedType}, provided: ${returnType}) in ${func.kind} ${func.toString}.")
+        setError(s"Method ${getEvaluateString(func)} returns wrong type (expected: ${expectedType}, provided: ${returnType}) in ${func.nodeName} ${func.toString}.")
       }
     } catch {
       case e: NoSuchMethodException =>
-        setError(s"Method ${getEvaluateString(func)} is not found in ${func.clazz} for ${func.kind} ${func.toString}.")
+        setError(s"Method ${getEvaluateString(func)} is not found in ${func.clazz} for ${func.nodeName} ${func.toString}.")
     }
   }
 

@@ -46,7 +46,7 @@ case class FormulaExpander() extends SequentialAnalyzer {
       case symbol: Symbol => {
         definitions.lookupFormula(symbol) match {
           case Some(f) if (reached.contains(f.name)) => {
-            setError(s"${curFormula.kind} ${curFormula.name} contains cycle formula reference. Please fix.")
+            setError(s"${curFormula.nodeName} ${curFormula.name} contains cycle formula reference. Please fix.")
           }
           case Some(f) =>
             reached.add(f.name)
@@ -67,7 +67,7 @@ case class CheckFormulaUnique() extends FormulaAnalyzer {
     LogicUtils.checkUnique(formulas, _.asInstanceOf[NamedFormula].name, {
       case formula: NamedFormula =>
         setError(
-          s"${formula.kind}'s name ${formula.name} has already been used somewhere else. Please choose another name.")
+          s"${formula.nodeName}'s name ${formula.name} has already been used somewhere else. Please choose another name.")
     })
 
     formulas.foreach(formula => {
@@ -78,7 +78,7 @@ case class CheckFormulaUnique() extends FormulaAnalyzer {
       LogicUtils.checkUnique(variables, _.asInstanceOf[Variable].name, {
         case v: Variable => {
           setError(
-            s"${v.kind}'s name ${v.name} has already been used somewhere else in ${formula.kind}: ${formula.name}. Please choose another name.")
+            s"${v.nodeName}'s name ${v.name} has already been used somewhere else in ${formula.nodeName}: ${formula.name}. Please choose another name.")
         }
 
       })
@@ -106,7 +106,7 @@ case class FormulaResolver() extends SequentialAnalyzer {
         call match {
           case func: FunctionCall => {
             //only predicate is allowed
-            setError(s"${func.kind} ${func} is not a predicate.")
+            setError(s"${func.nodeName} ${func} is not a predicate.")
           }
           case _ => call
         }
@@ -115,11 +115,11 @@ case class FormulaResolver() extends SequentialAnalyzer {
         val variable = context.get(symbol)
         variable match {
           case Some(v) if v.sort != boolSort => {
-            setError(s"${v.sort} ${v.kind} ${v.name} is not a ${boolSort.name} ${v.kind}")
+            setError(s"${v.sort} ${v.nodeName} ${v.name} is not a ${boolSort.name} ${v.nodeName}")
           }
           case Some(v) => v
           case None =>
-            setError(s"Undefined variable ${symbol} in ${curFormula.kind} ${curFormula.name}")
+            setError(s"Undefined variable ${symbol} in ${curFormula.nodeName} ${curFormula.name}")
         }
       }
     }, {
@@ -134,7 +134,7 @@ case class FormulaResolver() extends SequentialAnalyzer {
     val variable = definitions.lookupSort(uvar.usort) match {
       case Some(sort) => Variable(uvar.name, sort)
       case None =>
-        setError(s"Undefined sort ${uvar.usort} for ${uvar.kind} ${uvar.name} in ${curFormula.kind} ${curFormula.name}")
+        setError(s"Undefined sort ${uvar.usort} for ${uvar.nodeName} ${uvar.name} in ${curFormula.nodeName} ${curFormula.name}")
         Variable(uvar.name, null)
     }
 
@@ -149,7 +149,7 @@ case class FormulaResolver() extends SequentialAnalyzer {
 
     def resolveFunctionCall(funcDef: BaseFunctionDef[_ <: IBaseFunction], call: Seq[Term] => BaseFunctionCall): BaseFunctionCall = {
       if (funcDef.parameters.length != ufunc.parameters.length) {
-        setError(s"Incorrect number of parameters for ${ufunc.kind} ${funcDef} in ${curFormula.kind} ${curFormula.name}")
+        setError(s"Incorrect number of parameters for ${ufunc.nodeName} ${funcDef} in ${curFormula.nodeName} ${curFormula.name}")
       } else {
         val paramDef = funcDef.parameters.iterator
         val params = ufunc.parameters.map { param => resolveParameter(param, paramDef.next, funcDef) }
@@ -164,14 +164,14 @@ case class FormulaResolver() extends SequentialAnalyzer {
       val predicateDef = definitions.lookupPredicate(ufunc.name).get
       resolveFunctionCall(predicateDef, PredicateCall(predicateDef, _))
     } else {
-      setError(s"Undefined function ${ufunc.name} in ${curFormula.kind} ${curFormula.name}")
+      setError(s"Undefined function ${ufunc.name} in ${curFormula.nodeName} ${curFormula.name}")
     }
   }
 
   private def resolveParameter(param: Term, paramDef: Parameter, funcDef: BaseFunctionDef[_ <: IBaseFunction]): Term = {
     def checkSort(provided: Sort) {
       if (provided != paramDef.sort) {
-        setError(s"Incompatible argument for ${paramDef.kind} ${paramDef.name} (expected: ${paramDef.sort.name}, provided: ${provided.name}) in ${funcDef.kind} ${funcDef} for ${curFormula.kind} ${curFormula.name}")
+        setError(s"Incompatible argument for ${paramDef.nodeName} ${paramDef.name} (expected: ${paramDef.sort.name}, provided: ${provided.name}) in ${funcDef.nodeName} ${funcDef} for ${curFormula.nodeName} ${curFormula.name}")
       }
     }
 
@@ -187,14 +187,14 @@ case class FormulaResolver() extends SequentialAnalyzer {
             checkSort(v.sort)
             v
           case None =>
-            setError(s"Undefined variable ${uvar} in ${curFormula.kind} ${curFormula.name}")
+            setError(s"Undefined variable ${uvar} in ${curFormula.nodeName} ${curFormula.name}")
         }
       case True | False =>
         checkSort(boolSort)
         param
       case const: UnresolvedConstant =>
         if (!paramDef.sort.validInput(const.value)) {
-          setError(s"${const.value} is not a valid value for ${paramDef.kind} ${paramDef.name} in ${funcDef.kind} ${funcDef} of ${curFormula.kind} ${curFormula.name}.")
+          setError(s"${const.value} is not a valid value for ${paramDef.nodeName} ${paramDef.name} in ${funcDef.nodeName} ${funcDef} of ${curFormula.nodeName} ${curFormula.name}.")
         } else {
           Constant(paramDef.sort.parseInput(const.value))
         }
@@ -223,7 +223,7 @@ case class CheckDecidability() extends SequentialAnalyzer {
         }
         if (!decidable) {
           setError(
-            s"${curFormula.kind} ${curFormula.name} is undecidable since ${variable.kind} ${variable.name} has inifite sort. Please add a proper quantified predicate for ${variable.kind} ${variable.name}.")
+            s"${curFormula.nodeName} ${curFormula.name} is undecidable since ${variable.nodeName} ${variable.name} has inifite sort. Please add a proper quantified predicate for ${variable.nodeName} ${variable.name}.")
         }
       }
       case _ =>

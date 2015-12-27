@@ -1,6 +1,7 @@
 package edu.thu.ss.logic.paser
 
 import edu.thu.ss.logic.formula._
+import edu.thu.ss.logic.tree.NamedNode
 
 trait UnresolvedElement {
   def name: Symbol
@@ -8,9 +9,9 @@ trait UnresolvedElement {
 }
 
 case class UnresolvedFunctionCall(name: Symbol, parameters: Seq[Term]) extends Term with UnresolvedElement {
-  val kind = name.toString
+  val nodeName = name.toString
 
-  override def toString = s"$kind(${parameters.mkString(", ")})"
+  override def toString = s"$nodeName(${parameters.mkString(", ")})"
 }
 
 class UnresolvedVariable(override val name: Symbol, val usort: Symbol) extends Variable(name, null) with UnresolvedElement {
@@ -18,13 +19,13 @@ class UnresolvedVariable(override val name: Symbol, val usort: Symbol) extends V
   override def toString = name.toString
 }
 
-abstract class UnresolvedDefinition extends ASTNode with UnresolvedElement {
+abstract class UnresolvedDefinition extends NamedNode with UnresolvedElement {
   def clazz: String
 
 }
 
 case class UnresolvedSort(name: Symbol, clazz: String) extends UnresolvedDefinition {
-  val kind = "sort"
+  val nodeName = "sort"
 
   override def toString = name
 
@@ -47,7 +48,7 @@ abstract class UnresolvedBaseFunctionDef extends UnresolvedDefinition {
 case class UnresolvedFunctionDef(name: Symbol, parameters: Seq[UnresolvedParameter], range: Symbol, clazz: String) extends UnresolvedBaseFunctionDef {
   override def toString = s"$range $name(${parameters.mkString(", ")})"
 
-  val kind = "function"
+  val nodeName = "function"
 }
 
 case class UnresolvedPredicateDef(name: Symbol, parameters: Seq[UnresolvedParameter], clazz: String) extends UnresolvedBaseFunctionDef {
@@ -55,17 +56,17 @@ case class UnresolvedPredicateDef(name: Symbol, parameters: Seq[UnresolvedParame
 
   override def toString = s"bool $name(${parameters.mkString(", ")})"
 
-  val kind = "predicate"
+  val nodeName = "predicate"
 
 }
 
 case class UnresolvedFormulaDef(name: Symbol, formula: Formula) extends UnresolvedDefinition {
   val clazz = ""
 
-  val kind = "formula"
+  val nodeName = "formula"
 }
 
 case class UnresolvedConstant(value: String) extends Term {
 
-  val kind = "constant"
+  val nodeName = "constant"
 }

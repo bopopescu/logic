@@ -1,13 +1,13 @@
-package edu.thu.ss.logic.formula
+package edu.thu.ss.logic.tree
 
 import edu.thu.ss.logic.paser.TreeNodeException
 
-abstract class ASTNode {
-  def kind: String
+trait NamedNode {
+  def nodeName: String
 
 }
 
-abstract class TreeNode[BaseType <: TreeNode[BaseType]] extends ASTNode with Product {
+abstract class TreeNode[BaseType <: TreeNode[BaseType]] extends NamedNode with Product {
   self: BaseType =>
 
   def children: Seq[BaseType]
@@ -66,6 +66,24 @@ abstract class TreeNode[BaseType <: TreeNode[BaseType]] extends ASTNode with Pro
     val ret = new collection.mutable.ArrayBuffer[A]()
     foreach(ret ++= f(_))
     ret
+  }
+
+  def forall(p: BaseType => Boolean): Boolean = {
+    val result = p(this)
+    if (!result) {
+      false
+    } else {
+      children.forall(_.forall(p))
+    }
+  }
+
+  def exists(p: BaseType => Boolean): Boolean = {
+    val result = p(this)
+    if (result) {
+      true
+    } else {
+      children.exists { _.exists(p) }
+    }
   }
 
   /**
@@ -238,7 +256,7 @@ abstract class TreeNode[BaseType <: TreeNode[BaseType]] extends ASTNode with Pro
   def makeCopy(newArgs: Array[AnyRef]): BaseType = {
     val ctors = getClass.getConstructors.filter(_.getParameterTypes.size != 0)
     if (ctors.isEmpty) {
-      sys.error(s"No valid constructor for $kind")
+      sys.error(s"No valid constructor for $nodeName")
     }
     val defaultCtor = ctors.maxBy(_.getParameterTypes.size)
 
@@ -255,7 +273,7 @@ abstract class TreeNode[BaseType <: TreeNode[BaseType]] extends ASTNode with Pro
           this,
           s"""
              |Failed to copy node.
-             |Is otherCopyArgs specified correctly for $kind.
+             |Is otherCopyArgs specified correctly for $nodeName.
              |Exception message: ${e.getMessage}
              |ctor: $defaultCtor?
              |args: ${newArgs.mkString(", ")}

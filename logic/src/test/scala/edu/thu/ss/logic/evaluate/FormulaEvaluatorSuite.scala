@@ -1,13 +1,13 @@
-package edu.thu.ss.logic.evaluation
+package edu.thu.ss.logic.evaluate
 
 import org.scalatest.FunSuite
-
 import edu.thu.ss.logic.paser.PolicyParser
+import edu.thu.ss.logic.model.QueryModel
 
 class FormulaEvaluatorSuite extends FunSuite {
 
   val parser = new PolicyParser
-  val evaluator = new FormulaEvaluator(new EvaluationContext)
+  val evaluator = new FormulaEvaluator(QueryModel.Empty)
 
   test("test1") {
     val policy = parser.parsePolicy("policy/policy1")
