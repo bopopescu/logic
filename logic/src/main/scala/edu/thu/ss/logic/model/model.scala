@@ -7,6 +7,16 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.plans.logical.BinaryNode
 import org.apache.spark.sql.catalyst.plans.logical.UnaryNode
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode
+import scala.collection.mutable
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
+import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.plans.logical.Project
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
+import org.apache.spark.sql.catalyst.expressions.Alias
+import org.apache.spark.sql.catalyst.expressions.NamedExpression
+import org.apache.spark.sql.catalyst.plans.logical.Aggregate
+import edu.thu.ss.logic.formula.Formula
 
 abstract class State extends DoubleNode[State] {
   var parent: State = null
@@ -14,6 +24,49 @@ abstract class State extends DoubleNode[State] {
   def nodeName = "state"
 
   def plan: LogicalPlan
+
+  private[model] val attributeExprs = new mutable.HashMap[Attribute, Expression]
+
+  private[model] val attributeMap = new mutable.HashMap[Attribute, Seq[Attribute]]
+
+  private val formulaCache = new mutable.HashMap[Formula, Boolean]
+
+  def getAttribute(name: String): Attribute =
+    plan.output.find { _.name == name } match {
+      case Some(a) => a
+      case None => throw new IllegalArgumentException(s"$name is not output by the current plan operator")
+    }
+
+  def getAttributeDefinition(attr: String): Expression =
+    getAttributeDefinition(getAttribute(attr))
+
+  def getBaseAttribute(attr: String): Seq[Attribute] =
+    getBaseAttributes(getAttribute(attr))
+
+  def getBaseAttributes(attr: Attribute): Seq[Attribute] = {
+    attributeMap.getOrElseUpdate(attr, {
+      getAttributeDefinition(attr).collect({
+        case attribute: Attribute => attribute
+      })
+    })
+  }
+
+  def getAttributeDefinition(attr: Attribute): Expression =
+    attributeExprs.get(attr) match {
+      case Some(e) => e
+      case None => throw new IllegalArgumentException(s"$attr is not output by the current plan operator")
+    }
+
+  def clearCache {
+    formulaCache.clear
+  }
+
+  def cacheFormula(formula: Formula, value: Boolean) = {
+    formulaCache.put(formula, value)
+    value
+  }
+
+  def getFormula(formula: Formula) = formulaCache.get(formula)
 
 }
 
@@ -35,19 +88,23 @@ case class LeafState(plan: LeafNode) extends State {
 }
 
 case class QueryModel(initialStates: Seq[State], finalState: State) {
+  def clearCache {
+    finalState.foreach { _.clearCache }
 
+  }
 }
 
 object QueryModel {
   val Empty = {
     val state = new LeafState(null)
+
     new QueryModel(Seq(state), state)
   }
 
   def fromQueryPlan(plan: LogicalPlan): QueryModel = {
     val initialStates = new ListBuffer[State]
     val finalState = translatePlan(plan, initialStates)
-
+    buildAttributeExprs(finalState)
     new QueryModel(initialStates, finalState)
   }
 
@@ -69,6 +126,35 @@ object QueryModel {
         val state = LeafState(leaf)
         initialStates.append(state)
         state
+    }
+  }
+
+  private def buildAttributeExprs(finalState: State) {
+    finalState.foreachUp { state =>
+      state.attributeExprs.clear
+      state.plan match {
+        case leaf: LeafNode =>
+          //initialization
+          leaf.output.foreach { attr => state.attributeExprs.put(attr, attr) }
+        case proj: Project =>
+          buildTransformation(state, proj.projectList, state.children(0))
+        case agg: Aggregate =>
+          buildTransformation(state, agg.aggregateExpressions, state.children(0))
+        case _ => state.children.foreach { state.attributeExprs ++= _.attributeExprs }
+      }
+    }
+  }
+
+  private def buildTransformation(state: State, attrList: Seq[NamedExpression], child: State) {
+    attrList.foreach { expr =>
+      expr match {
+        case ref: Attribute => state.attributeExprs.put(ref, ref)
+        case alias: Alias =>
+          val transformed = alias.child.transform {
+            case attr: Attribute => child.attributeExprs.getOrElse(attr, null)
+          }
+          state.attributeExprs.put(alias.toAttribute, transformed)
+      }
     }
   }
 

@@ -223,8 +223,9 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
   protected def parseU: Parser[Formula] =
     rep1sep(parseImply, AU) ^^
       (_.reduceRight { formula.AU(_, _) }) |
+      //TODO only keep AU
       rep1sep(parseImply, EU) ^^
-      (_.reduceRight { formula.EU(_, _) }) |
+      (_.reduceRight { formula.AU(_, _) }) |
       rep1sep(parseImply, pAU) ^^
       (_.reduceRight { formula.pAU(_, _) }) |
       rep1sep(parseImply, pEU) ^^
@@ -246,8 +247,9 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
       AG ~> parseUnary ^^ (formula.AG(_)) |
       AF ~> parseUnary ^^ (formula.AF(_)) |
       AX ~> parseUnary ^^ (formula.AX(_)) |
-      EG ~> parseUnary ^^ (formula.EG(_)) |
-      EF ~> parseUnary ^^ (formula.EF(_)) |
+      //TODO: only keep AG/AF
+      EG ~> parseUnary ^^ (formula.AG(_)) |
+      EF ~> parseUnary ^^ (formula.AF(_)) |
       EX ~> parseUnary ^^ (formula.EX(_)) |
       pAG ~> parseUnary ^^ (formula.pAG(_)) |
       pAF ~> parseUnary ^^ (formula.pAF(_)) |

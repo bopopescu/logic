@@ -12,7 +12,7 @@ abstract class TreeNode[BaseType <: TreeNode[BaseType]] extends NamedNode with P
 
   def children: Seq[BaseType]
 
-  lazy val containsChild: Set[TreeNode[_]] = children.toSet
+  def containsChild: Set[TreeNode[_]] = children.toSet
 
   def fastEquals(other: TreeNode[_]): Boolean = {
     this.eq(other) || this == other
@@ -69,21 +69,11 @@ abstract class TreeNode[BaseType <: TreeNode[BaseType]] extends NamedNode with P
   }
 
   def forall(p: BaseType => Boolean): Boolean = {
-    val result = p(this)
-    if (!result) {
-      false
-    } else {
-      children.forall(_.forall(p))
-    }
+    p(this) && children.forall { _.forall(p) }
   }
 
   def exists(p: BaseType => Boolean): Boolean = {
-    val result = p(this)
-    if (result) {
-      true
-    } else {
-      children.exists { _.exists(p) }
-    }
+    p(this) || children.exists { _.exists { p } }
   }
 
   /**
@@ -280,6 +270,27 @@ abstract class TreeNode[BaseType <: TreeNode[BaseType]] extends NamedNode with P
            """.stripMargin)
     }
   }
+
+  def treeString: String = generateTreeString(0, new StringBuilder).toString
+
+  protected def generateTreeString(depth: Int, builder: StringBuilder): StringBuilder = {
+    builder.append(" " * depth)
+    builder.append(simpleString)
+    builder.append("\n")
+    children.foreach(_.generateTreeString(depth + 1, builder))
+    builder
+  }
+
+  def simpleString: String = s"$nodeName $argString".trim
+  
+  def argString: String = productIterator.flatMap {
+    case tn: TreeNode[_] if containsChild(tn) => Nil
+    case tn: TreeNode[_] if tn.toString contains "\n" => s"(${tn.simpleString})" :: Nil
+    case seq: Seq[BaseType] if seq.toSet.subsetOf(children.toSet) => Nil
+    case seq: Seq[_] => seq.mkString("[", ",", "]") :: Nil
+    case set: Set[_] => set.mkString("{", ",", "}") :: Nil
+    case other => other :: Nil
+  }.mkString(", ")
 
 }
 

@@ -18,7 +18,7 @@
 package org.apache.spark.sql.catalyst.optimizer
 
 import scala.collection.immutable.HashSet
-import org.apache.spark.sql.catalyst.analysis.{CleanupAliases, EliminateSubQueries}
+import org.apache.spark.sql.catalyst.analysis.{ CleanupAliases, EliminateSubQueries }
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.FullOuter
@@ -36,35 +36,35 @@ object DefaultOptimizer extends Optimizer {
     // SubQueries are only needed for analysis and can be removed before execution.
     Batch("Remove SubQueries", FixedPoint(100),
       EliminateSubQueries) ::
-    Batch("Aggregate", FixedPoint(100),
-      ReplaceDistinctWithAggregate,
-      RemoveLiteralFromGroupExpressions) ::
-    Batch("Operator Optimizations", FixedPoint(100),
-      // Operator push down
-      SetOperationPushDown,
-      SamplePushDown,
-      PushPredicateThroughJoin,
-      PushPredicateThroughProject,
-      PushPredicateThroughGenerate,
-      ColumnPruning,
-      // Operator combine
-      ProjectCollapsing,
-      CombineFilters,
-      CombineLimits,
-      // Constant folding
-      NullPropagation,
-      OptimizeIn,
-      ConstantFolding,
-      LikeSimplification,
-      BooleanSimplification,
-      RemovePositive,
-      SimplifyFilters,
-      SimplifyCasts,
-      SimplifyCaseConversionExpressions) ::
-    Batch("Decimal Optimizations", FixedPoint(100),
-      DecimalAggregates) ::
-    Batch("LocalRelation", FixedPoint(100),
-      ConvertToLocalRelation) :: Nil
+      Batch("Aggregate", FixedPoint(100),
+        ReplaceDistinctWithAggregate,
+        RemoveLiteralFromGroupExpressions) ::
+        Batch("Operator Optimizations", FixedPoint(100),
+          // Operator push down
+          SetOperationPushDown,
+          SamplePushDown,
+          PushPredicateThroughJoin,
+          PushPredicateThroughProject,
+          PushPredicateThroughGenerate,
+          ColumnPruning,
+          // Operator combine
+          ProjectCollapsing,
+          CombineFilters,
+          CombineLimits,
+          // Constant folding
+          NullPropagation,
+          OptimizeIn,
+          ConstantFolding,
+          LikeSimplification,
+          BooleanSimplification,
+          RemovePositive,
+          SimplifyFilters,
+          SimplifyCasts,
+          SimplifyCaseConversionExpressions) ::
+          Batch("Decimal Optimizations", FixedPoint(100),
+            DecimalAggregates) ::
+            Batch("LocalRelation", FixedPoint(100),
+              ConvertToLocalRelation) :: Nil
 }
 
 /**
@@ -136,7 +136,7 @@ object SetOperationPushDown extends Rule[LogicalPlan] with PredicateHelper {
     andConditions.partition(_.deterministic) match {
       case (deterministic, nondeterministic) =>
         deterministic.reduceOption(And).getOrElse(Literal(true)) ->
-        nondeterministic.reduceOption(And).getOrElse(Literal(true))
+          nondeterministic.reduceOption(And).getOrElse(Literal(true))
     }
   }
 
@@ -148,9 +148,7 @@ object SetOperationPushDown extends Rule[LogicalPlan] with PredicateHelper {
       Filter(nondeterministic,
         Union(
           Filter(deterministic, left),
-          Filter(pushToRight(deterministic, rewrites), right)
-        )
-      )
+          Filter(pushToRight(deterministic, rewrites), right)))
 
     // Push down deterministic projection through UNION ALL
     case p @ Project(projectList, u @ Union(left, right)) =>
@@ -170,9 +168,7 @@ object SetOperationPushDown extends Rule[LogicalPlan] with PredicateHelper {
       Filter(nondeterministic,
         Intersect(
           Filter(deterministic, left),
-          Filter(pushToRight(deterministic, rewrites), right)
-        )
-      )
+          Filter(pushToRight(deterministic, rewrites), right)))
 
     // Push down filter through EXCEPT
     case Filter(condition, e @ Except(left, right)) =>
@@ -181,9 +177,7 @@ object SetOperationPushDown extends Rule[LogicalPlan] with PredicateHelper {
       Filter(nondeterministic,
         Except(
           Filter(deterministic, left),
-          Filter(pushToRight(deterministic, rewrites), right)
-        )
-      )
+          Filter(pushToRight(deterministic, rewrites), right)))
   }
 }
 
@@ -199,8 +193,7 @@ object SetOperationPushDown extends Rule[LogicalPlan] with PredicateHelper {
  */
 object ColumnPruning extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transform {
-    case a @ Aggregate(_, _, e @ Expand(_, groupByExprs, _, child))
-      if (child.outputSet -- AttributeSet(groupByExprs) -- a.references).nonEmpty =>
+    case a @ Aggregate(_, _, e @ Expand(_, groupByExprs, _, child)) if (child.outputSet -- AttributeSet(groupByExprs) -- a.references).nonEmpty =>
       a.copy(child = e.copy(child = prunedChild(child, AttributeSet(groupByExprs) ++ a.references)))
 
     // Eliminate attributes that are not needed to calculate the specified aggregates.
@@ -222,8 +215,7 @@ object ColumnPruning extends Rule[LogicalPlan] {
         Project(projectList, g.copy(child = Project(neededChildOutput.toSeq, g.child)))
       }
 
-    case p @ Project(projectList, a @ Aggregate(groupingExpressions, aggregateExpressions, child))
-        if (a.outputSet -- p.references).nonEmpty =>
+    case p @ Project(projectList, a @ Aggregate(groupingExpressions, aggregateExpressions, child)) if (a.outputSet -- p.references).nonEmpty =>
       Project(
         projectList,
         Aggregate(
@@ -257,8 +249,7 @@ object ColumnPruning extends Rule[LogicalPlan] {
       Limit(exp, Project(projectList, child))
 
     // Push down project if possible when the child is sort
-    case p @ Project(projectList, s @ Sort(_, _, grandChild))
-      if s.references.subsetOf(p.outputSet) =>
+    case p @ Project(projectList, s @ Sort(_, _, grandChild)) if s.references.subsetOf(p.outputSet) =>
       s.copy(child = Project(projectList, grandChild))
 
     // Eliminate no-op Projects
@@ -306,8 +297,7 @@ object ProjectCollapsing extends Rule[LogicalPlan] {
         }).asInstanceOf[Seq[NamedExpression]]
         // collapse 2 projects may introduce unnecessary Aliases, trim them here.
         val cleanedProjection = substitutedProjection.map(p =>
-          CleanupAliases.trimNonTopLevelAliases(p).asInstanceOf[NamedExpression]
-        )
+          CleanupAliases.trimNonTopLevelAliases(p).asInstanceOf[NamedExpression])
         Project(cleanedProjection, child)
       }
   }
@@ -487,7 +477,7 @@ object BooleanSimplification extends Rule[LogicalPlan] with PredicateHelper {
               (common :+ And(ldiff.reduce(Or), rdiff.reduce(Or))).reduce(Or)
             }
           }
-      }  // end of And(left, right)
+      } // end of And(left, right)
 
       case or @ Or(left, right) => (left, right) match {
         // true || r  =>  true
@@ -502,11 +492,11 @@ object BooleanSimplification extends Rule[LogicalPlan] with PredicateHelper {
         case (l, r) if l fastEquals r => l
         // (a && b) || (a && c)  =>  a && (b || c)
         case _ =>
-           // 1. Split left and right to get the conjunctive predicates,
-           //   i.e.  lhs = (a, b), rhs = (a, c)
-           // 2. Find the common predict between lhsSet and rhsSet, i.e. common = (a)
-           // 3. Remove common predict from lhsSet and rhsSet, i.e. ldiff = (b), rdiff = (c)
-           // 4. Apply the formula, get the optimized predicate: common && (ldiff || rdiff)
+          // 1. Split left and right to get the conjunctive predicates,
+          //   i.e.  lhs = (a, b), rhs = (a, c)
+          // 2. Find the common predict between lhsSet and rhsSet, i.e. common = (a)
+          // 3. Remove common predict from lhsSet and rhsSet, i.e. ldiff = (b), rdiff = (c)
+          // 4. Apply the formula, get the optimized predicate: common && (ldiff || rdiff)
           val lhs = splitConjunctivePredicates(left)
           val rhs = splitConjunctivePredicates(right)
           val common = lhs.filter(e => rhs.exists(e.semanticEquals(_)))
@@ -525,7 +515,7 @@ object BooleanSimplification extends Rule[LogicalPlan] with PredicateHelper {
               (common :+ Or(ldiff.reduce(And), rdiff.reduce(And))).reduce(And)
             }
           }
-      }  // end of Or(left, right)
+      } // end of Or(left, right)
 
       case not @ Not(exp) => exp match {
         // not(true)  =>  false
@@ -543,7 +533,7 @@ object BooleanSimplification extends Rule[LogicalPlan] with PredicateHelper {
         // not(not(e))  =>  e
         case Not(e) => e
         case _ => not
-      }  // end of Not(exp)
+      } // end of Not(exp)
 
       // if (true) a else b  =>  a
       // if (false) a else b  =>  b
@@ -668,9 +658,9 @@ object PushPredicateThroughJoin extends Rule[LogicalPlan] with PredicateHelper {
    */
   private def split(condition: Seq[Expression], left: LogicalPlan, right: LogicalPlan) = {
     val (leftEvaluateCondition, rest) =
-        condition.partition(_.references subsetOf left.outputSet)
+      condition.partition(_.references subsetOf left.outputSet)
     val (rightEvaluateCondition, commonCondition) =
-        rest.partition(_.references subsetOf right.outputSet)
+      rest.partition(_.references subsetOf right.outputSet)
 
     (leftEvaluateCondition, rightEvaluateCondition, commonCondition)
   }
@@ -701,7 +691,7 @@ object PushPredicateThroughJoin extends Rule[LogicalPlan] with PredicateHelper {
 
           (leftFilterConditions ++ commonFilterCondition).
             reduceLeftOption(And).map(Filter(_, newJoin)).getOrElse(newJoin)
-        case _ @ (LeftOuter | LeftSemi) =>
+        case _@ (LeftOuter | LeftSemi) =>
           // push down the left side only `where` condition
           val newLeft = leftFilterConditions.
             reduceLeftOption(And).map(Filter(_, left)).getOrElse(left)
@@ -720,7 +710,7 @@ object PushPredicateThroughJoin extends Rule[LogicalPlan] with PredicateHelper {
         split(joinCondition.map(splitConjunctivePredicates).getOrElse(Nil), left, right)
 
       joinType match {
-        case _ @ (Inner | LeftSemi) =>
+        case _@ (Inner | LeftSemi) =>
           // push down the single side only join filter for both sides sub queries
           val newLeft = leftJoinConditions.
             reduceLeftOption(And).map(Filter(_, left)).getOrElse(left)

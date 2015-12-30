@@ -35,8 +35,9 @@ object RuleExecutor {
   def dumpTimeSpent(): String = {
     val map = timeMap.asMap().asScala
     val maxSize = map.keys.map(_.toString.length).max
-    map.toSeq.sortBy(_._2).reverseMap { case (k, v) =>
-      s"${k.padTo(maxSize, " ").mkString} $v"
+    map.toSeq.sortBy(_._2).reverseMap {
+      case (k, v) =>
+        s"${k.padTo(maxSize, " ").mkString} $v"
     }.mkString("\n")
   }
 }
@@ -60,7 +61,6 @@ abstract class RuleExecutor[TreeType <: TreeNode[_]] extends Logging {
 
   /** Defines a sequence of rule batches, to be overridden by the implementation. */
   protected val batches: Seq[Batch]
-
 
   /**
    * Executes the batches of rules defined by the subclass. The batches are executed serially

@@ -10,7 +10,7 @@ import edu.thu.ss.logic.tree.NamedNode
 import edu.thu.ss.logic.model.State
 
 abstract class LogicDefinition extends NamedNode {
-  def name: Symbol
+  val name: Symbol
 
 }
 
@@ -20,7 +20,7 @@ trait ClassedDefinition[T] {
 }
 
 case class Sort(name: Symbol, clazz: Class[_ <: ISort[_]]) extends LogicDefinition with ClassedDefinition[ISort[_]] {
-  val nodeName = "sort"
+  def nodeName = "sort"
   override val toString = name.toString
 
   //sort implementation is shared for all queries
@@ -60,27 +60,77 @@ abstract class BaseFunctionDef[T <: IBaseFunction] extends LogicDefinition with 
     }
     value
   }
+
 }
 
-case class FunctionDef(name: Symbol, parameters: Seq[Parameter], range: Sort, clazz: Class[_ <: IFunction]) extends BaseFunctionDef[IFunction] {
-  val nodeName = "function"
+case class FunctionDef(name: Symbol, parameters: Seq[Parameter], range: Sort, clazz: Class[_ <: IFunction]) extends BaseFunctionDef[IFunction] with Equals {
+  def nodeName = "function"
 
   override def toString = s"$range $name(${parameters.mkString(", ")})"
 
+  def canEqual(other: Any) = {
+    other.isInstanceOf[edu.thu.ss.logic.formula.FunctionDef]
+  }
+
+  override def equals(other: Any) = {
+    other match {
+      case that: edu.thu.ss.logic.formula.FunctionDef => that.canEqual(FunctionDef.this) && name == that.name
+      case _ => false
+    }
+  }
+
+  override def hashCode() = {
+    val prime = 41
+    prime + name.hashCode
+  }
+
 }
 
-case class PredicateDef(name: Symbol, parameters: Seq[Parameter], clazz: Class[_ <: IPredicate]) extends BaseFunctionDef[IPredicate] {
-  val nodeName = "predicate"
+case class PredicateDef(name: Symbol, parameters: Seq[Parameter], clazz: Class[_ <: IPredicate]) extends BaseFunctionDef[IPredicate] with Equals {
+  def nodeName = "predicate"
   val range: Sort = boolSort
 
   override def toString = s"$name(${parameters.mkString(", ")})"
 
+  def canEqual(other: Any) = {
+    other.isInstanceOf[edu.thu.ss.logic.formula.PredicateDef]
+  }
+
+  override def equals(other: Any) = {
+    other match {
+      case that: edu.thu.ss.logic.formula.PredicateDef => that.canEqual(PredicateDef.this) && name == that.name
+      case _ => false
+    }
+  }
+
+  override def hashCode() = {
+    val prime = 41
+    prime + name.hashCode
+  }
+
 }
 
-case class FormulaDef(name: Symbol, var formula: Formula) extends LogicDefinition with NamedFormula {
-  val nodeName = "formula"
+case class FormulaDef(name: Symbol, var formula: Formula) extends LogicDefinition with NamedFormula with Equals {
+  def nodeName = "formula"
 
   override def toString = s"$name=$formula"
+
+  def canEqual(other: Any) = {
+    other.isInstanceOf[edu.thu.ss.logic.formula.FormulaDef]
+  }
+
+  override def equals(other: Any) = {
+    other match {
+      case that: edu.thu.ss.logic.formula.FormulaDef => that.canEqual(FormulaDef.this) && name == that.name
+      case _ => false
+    }
+  }
+
+  override def hashCode() = {
+    val prime = 41
+    prime + name.hashCode
+  }
+
 }
 
 class LogicDefinitions {

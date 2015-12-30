@@ -39,6 +39,7 @@ class PolicyParser extends Logging {
       FormulaExpander() ::
         CheckFormulaUnique() ::
         FormulaResolver() ::
+        FormulaSimplifier() ::
         CheckDecidability() ::
         Nil
     analyzers.foreach(_(list, definitions))

@@ -5,6 +5,8 @@ import scala.reflect.runtime.universe._
 import edu.thu.ss.logic.example.IntSort
 import edu.thu.ss.logic.definition.ISort
 import java.{ lang => java }
+import edu.thu.ss.logic.evaluate.EvaluationContext
+import edu.thu.ss.logic.formula._
 
 object LogicUtils {
 
@@ -42,6 +44,28 @@ object LogicUtils {
         set.add(id)
       }
     })
+  }
+
+  def sideBySide(left: String, right: String): Seq[String] = {
+    sideBySide(left.split("\n"), right.split("\n"))
+  }
+
+  def sideBySide(left: Seq[String], right: Seq[String]): Seq[String] = {
+    val maxLeftSize = left.map(_.size).max
+    val leftPadded = left ++ Seq.fill(math.max(right.size - left.size, 0))("")
+    val rightPadded = right ++ Seq.fill(math.max(left.size - right.size, 0))("")
+
+    leftPadded.zip(rightPadded).map {
+      case (l, r) => (if (l == r) " " else "!") + l + (" " * ((maxLeftSize - l.size) + 3)) + r
+    }
+  }
+
+  def hasValuedVariables(formula: Formula, context: EvaluationContext): Boolean = {
+    formula match {
+      case v: Variable if (context.isDefined(v)) => true
+      case func: BaseFunctionCall => func.parameters.exists { hasValuedVariables(_, context) }
+      case _ => formula.children.exists { hasValuedVariables(_, context) }
+    }
   }
 
 }

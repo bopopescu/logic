@@ -20,3 +20,4 @@ class FormulaEvaluatorSuite extends FunSuite {
   }
 
 }
+

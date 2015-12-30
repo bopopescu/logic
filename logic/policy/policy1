@@ -12,18 +12,20 @@ define predicate isTrue(bool b) class=edu.thu.ss.logic.example.IsTrue
 define formula f1 = isZero(x)
 
 #policy
+
+
+r1: exists int x. equals(x, 0)
+
+r2: forall int x. equals(x, 0)
+
+/*r0: (forall int x. isZero(x) imply equals(x, 0)) and (exists int x. equals(x, 0) and isZero(0))
+
 r1: forall int x. equals(x, 1) imply (forall int y. equals(x, y) imply (isZero(x) || isZero(y)))
 
-r2: exists int x. equals(1, 1) and equals(x, 1) and isZero(x)
+r2: AG (!output("c1"))
 
 r3: forall column c. output(c)
 
-r4: isZero(1) or isZero(0)
+r4: isZero(1) or isZero(0) or isZero(1) 
 
-r5: isZero(add(-1, 1))
-
-//r2: AG (!output("id"))
-
-//r3: not AG (isZero(1))
-
-
+r5: isZero(add(-1, 1))*/

@@ -24,9 +24,7 @@ abstract class Analyzer[Type] extends Logging {
 
   protected def setError(msg: => String): Null = {
     error = true
-    if (log.isErrorEnabled()) {
-      log.error(msg)
-    }
+    logError(msg)
     null
   }
 }

@@ -39,6 +39,12 @@ class Add extends IFunction {
 class IsZero extends IPredicate {
   def evaluate(x: Int): Boolean = x == 0
 
+  override def finite(index: Int) = true
+
+  override def quantifiedValues(index: Int, otherParams: Seq[Any]): Seq[Any] = {
+    Seq(0)
+  }
+
 }
 
 class Equals extends IPredicate {

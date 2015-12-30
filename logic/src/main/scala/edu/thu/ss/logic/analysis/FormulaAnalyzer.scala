@@ -12,6 +12,7 @@ import edu.thu.ss.logic.paser.UnresolvedFunctionCall
 import edu.thu.ss.logic.paser.UnresolvedConstant
 import edu.thu.ss.logic.definition.IBaseFunction
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.HashSet
 
 abstract class FormulaAnalyzer extends Analyzer[NamedFormula] {
 
@@ -70,6 +71,8 @@ case class CheckFormulaUnique() extends FormulaAnalyzer {
           s"${formula.nodeName}'s name ${formula.name} has already been used somewhere else. Please choose another name.")
     })
 
+    formulas.foreach(formula => checkBoundVariables(formula, formula.name))
+
     formulas.foreach(formula => {
       val variables = formula.map({
         case quantifier: Quantifier => quantifier.variable
@@ -77,12 +80,26 @@ case class CheckFormulaUnique() extends FormulaAnalyzer {
       }).filter { _ != null }
       LogicUtils.checkUnique(variables, _.asInstanceOf[Variable].name, {
         case v: Variable => {
-          setError(
-            s"${v.nodeName}'s name ${v.name} has already been used somewhere else in ${formula.nodeName}: ${formula.name}. Please choose another name.")
         }
 
       })
     })
+  }
+
+  private def checkBoundVariables(formula: Formula, name: String, variables: mutable.Set[Symbol] = new HashSet) {
+    formula match {
+      case quantifier: Quantifier =>
+        if (variables.contains(quantifier.variable.name)) {
+          setError(
+            s"${quantifier.variable.nodeName}'s name ${quantifier.variable.name} has already been used in formula ${name}. Please choose another name.")
+        }
+        variables.add(quantifier.variable.name)
+        checkBoundVariables(quantifier.child, name, variables)
+        variables.remove(quantifier.variable.name)
+
+      case _ => formula.children.foreach { checkBoundVariables(_, name, variables) }
+    }
+
   }
 
 }
@@ -140,8 +157,8 @@ case class FormulaResolver() extends SequentialAnalyzer {
 
     context.put(variable.name, variable)
     quantifier match {
-      case forall: Forall => Forall(variable, forall.body)
-      case exist: Exists => Exists(variable, exist.body)
+      case forall: Forall => Forall(variable, forall.child)
+      case exist: Exists => Exists(variable, exist.child)
     }
   }
 
@@ -211,15 +228,24 @@ case class CheckDecidability() extends SequentialAnalyzer {
         if (variable.sort.finite) {
           decidable = true
         }
-        //try to resolve quantified predicate anyway
-        val pred =
-          quantifier match {
-            case forall: Forall => getQuantifiedPredicate(forall.child, classOf[Imply], variable)
-            case exists: Exists => getQuantifiedPredicate(exists.child, classOf[And], variable)
+        if (quantifier.child.isInstanceOf[PredicateCall]) {
+          //a special case, only one predicate
+          val predicate = quantifier.child.asInstanceOf[PredicateCall]
+          if (checkQuantifiedPredicate(predicate, variable)) {
+            decidable = true
+            quantifier.quantifiedPredicate = predicate
           }
-        if (pred.isDefined) {
-          decidable = true
-          quantifier.quantifiedPredicate = pred.get
+        } else {
+          //try to resolve quantified predicate anyway
+          val pred =
+            quantifier match {
+              case forall: Forall => getQuantifiedPredicate(forall.child, classOf[Imply], variable)
+              case exists: Exists => getQuantifiedPredicate(exists.child, classOf[And], variable)
+            }
+          if (pred.isDefined) {
+            decidable = true
+            quantifier.quantifiedPredicate = pred.get
+          }
         }
         if (!decidable) {
           setError(
@@ -231,6 +257,7 @@ case class CheckDecidability() extends SequentialAnalyzer {
   }
 
   protected def getQuantifiedPredicate[T <: BinaryFormula](body: Formula, clazz: Class[T], variable: Variable): Option[PredicateCall] = {
+
     if (!clazz.isInstance(body)) {
       return None
     }
