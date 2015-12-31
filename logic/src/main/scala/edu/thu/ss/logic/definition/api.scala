@@ -54,7 +54,7 @@ trait IPredicate extends IBaseFunction {
 
   def finite(index: Int): Boolean = false
 
-  def quantifiedValues(index: Int, otherParams: Seq[Any]): Seq[Any] = throw new UnsupportedOperationException
+  def values(index: Int, otherParams: Seq[Any]): Seq[Any] = throw new UnsupportedOperationException
 
 }
 

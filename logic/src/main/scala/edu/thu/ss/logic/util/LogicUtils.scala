@@ -60,11 +60,11 @@ object LogicUtils {
     }
   }
 
-  def hasValuedVariables(formula: Formula, context: EvaluationContext): Boolean = {
+  def hasValuedVariable(formula: Formula, context: EvaluationContext): Boolean = {
     formula match {
       case v: Variable if (context.isDefined(v)) => true
-      case func: BaseFunctionCall => func.parameters.exists { hasValuedVariables(_, context) }
-      case _ => formula.children.exists { hasValuedVariables(_, context) }
+      case func: BaseFunctionCall => func.parameters.exists { hasValuedVariable(_, context) }
+      case _ => formula.children.exists { hasValuedVariable(_, context) }
     }
   }
 

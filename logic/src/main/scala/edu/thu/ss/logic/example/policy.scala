@@ -41,7 +41,7 @@ class IsZero extends IPredicate {
 
   override def finite(index: Int) = true
 
-  override def quantifiedValues(index: Int, otherParams: Seq[Any]): Seq[Any] = {
+  override def values(index: Int, otherParams: Seq[Any]): Seq[Any] = {
     Seq(0)
   }
 
@@ -52,7 +52,7 @@ class Equals extends IPredicate {
 
   override def finite(index: Int) = true
 
-  override def quantifiedValues(index: Int, otherParams: Seq[Any]): Seq[Any] = {
+  override def values(index: Int, otherParams: Seq[Any]): Seq[Any] = {
     assert(otherParams.length == 1)
     otherParams
   }
@@ -63,6 +63,14 @@ class IsTrue extends IPredicate {
 }
 
 class Output extends IPredicate {
-  def evaluate(column: String): Boolean = true
+  def evaluate(column: String): Boolean = false
 
+}
+
+class IsNumerical extends IPredicate {
+  def evaluate(column: String): Boolean = column == "c1"
+
+  override def finite(index: Int) = true
+
+  override def values(index: Int, otherParams: Seq[Any]) = Seq("c1")
 }

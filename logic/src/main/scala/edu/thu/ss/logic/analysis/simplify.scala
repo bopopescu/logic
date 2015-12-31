@@ -14,6 +14,8 @@ case class FormulaSimplifier(maxIterations: Int = 100) extends SequentialAnalyze
     SimplifyPastTemporal)
 
   protected def analyzeFormula() {
+    val startTime = System.currentTimeMillis()
+
     var curFormula = this.curFormula.formula
     val startFormula = curFormula
     var iteration = 1
@@ -47,6 +49,8 @@ case class FormulaSimplifier(maxIterations: Int = 100) extends SequentialAnalyze
       }
       lastFormula = curFormula
     }
+    val totalTime = System.currentTimeMillis - startTime
+    logTrace(s"Formula simplification finishes in ${totalTime} ms.")
 
     this.curFormula.formula = curFormula
   }
@@ -114,18 +118,11 @@ object SimplifyQuantifier extends SimplifyRule {
   }
 
   private def unused(variable: Variable, formula: Formula): Boolean = formula.forall {
-    case pred: PredicateCall => unusedInTerm(variable, pred)
+    case func: BaseFunctionCall => func.parameters.forall { unused(variable, _) }
     case v: Variable if (variable == v) => false
     case _ => true
   }
 
-  private def unusedInTerm(variable: Variable, term: Term): Boolean = {
-    term match {
-      case func: BaseFunctionCall => func.parameters.forall { unusedInTerm(variable, _) }
-      case v: Variable if (variable == v) => false
-      case _ => true
-    }
-  }
 }
 
 object SimplifyFutureTemporal extends SimplifyRule {

@@ -228,41 +228,26 @@ case class CheckDecidability() extends SequentialAnalyzer {
         if (variable.sort.finite) {
           decidable = true
         }
-        if (quantifier.child.isInstanceOf[PredicateCall]) {
-          //a special case, only one predicate
-          val predicate = quantifier.child.asInstanceOf[PredicateCall]
-          if (checkQuantifiedPredicate(predicate, variable)) {
-            decidable = true
-            quantifier.quantifiedPredicate = predicate
-          }
-        } else {
-          //try to resolve quantified predicate anyway
-          val pred =
-            quantifier match {
-              case forall: Forall => getQuantifiedPredicate(forall.child, classOf[Imply], variable)
-              case exists: Exists => getQuantifiedPredicate(exists.child, classOf[And], variable)
-            }
-          if (pred.isDefined) {
-            decidable = true
-            quantifier.quantifiedPredicate = pred.get
-          }
+
+        val candidate = quantifier.child match {
+          case pred: PredicateCall => pred
+          case imply: Imply if (quantifier.isInstanceOf[Forall]) => imply.left
+          case and: And if (quantifier.isInstanceOf[Exists]) => and
         }
+
+        val pred = getQuantifiedPredicate(candidate, variable)
+        if (pred.isDefined) {
+          quantifier.quantifiedPredicate = pred.get
+          decidable = true
+        }
+
         if (!decidable) {
           setError(
-            s"${curFormula.nodeName} ${curFormula.name} is undecidable since ${variable.nodeName} ${variable.name} has inifite sort. Please add a proper quantified predicate for ${variable.nodeName} ${variable.name}.")
+            s"${curFormula.nodeName} ${curFormula.name}: ${curFormula.formula} is undecidable since ${variable.nodeName} ${variable.name} has inifite sort. Please add a proper quantified predicate for ${variable.nodeName} ${variable.name}.")
         }
       }
       case _ =>
     }
-  }
-
-  protected def getQuantifiedPredicate[T <: BinaryFormula](body: Formula, clazz: Class[T], variable: Variable): Option[PredicateCall] = {
-
-    if (!clazz.isInstance(body)) {
-      return None
-    }
-    val casted = clazz.cast(body)
-    getQuantifiedPredicate(casted.left, variable)
   }
 
   protected def getQuantifiedPredicate(formula: Formula, variable: Variable): Option[PredicateCall] = {

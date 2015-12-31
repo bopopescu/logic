@@ -63,7 +63,7 @@ class FormulaEvaluator(val model: QueryModel) extends Logging {
   }
 
   private def evaluateFormula(formula: Formula, state: State): Boolean = {
-    val cacheEnabled = !LogicUtils.hasValuedVariables(formula, context)
+    val cacheEnabled = !LogicUtils.hasValuedVariable(formula, context)
 
     if (cacheEnabled) {
       val cacheResult = state.getFormula(formula)
@@ -178,46 +178,51 @@ class FormulaEvaluator(val model: QueryModel) extends Logging {
       case subfunc: BaseFunctionCall => evaluateFunction(subfunc, state)
       case const: Constant => const.value
       case variable: Variable =>
-        // must be initialized
+        // must have been initialized
         context.getValue(variable)
     }
   }
 
   private def evaluateQuantifier(quantifier: Quantifier, state: State): Boolean = {
     val variable = quantifier.variable
-    if (quantifier.child.isInstanceOf[PredicateCall]) {
-      //handle a special case, only one predicate
-      val pred = quantifier.child.asInstanceOf[PredicateCall]
-      if (quantifier.quantifiedPredicate != null) {
-        //defined predicate values
-        return quantifier match {
-          case forall: Forall =>
-            if (!variable.sort.finite) {
-              false
-            } else {
-              val quantifiedValues = getQuantifiedValues(pred, variable, state).toSet
-              val values = variable.sort.values.toSet
-              values.forall { quantifiedValues.contains(_) }
-            }
-          case exists: Exists => !getQuantifiedValues(pred, variable, state).isEmpty
-        }
+    val quantifiedPredicate = quantifier.quantifiedPredicate
+
+    if (quantifier.child.isInstanceOf[PredicateCall] && quantifiedPredicate != null) {
+      //handle single quantified predicate
+      val result = quantifier match {
+        case forall: Forall =>
+          if (!variable.sort.finite) {
+            false
+          } else {
+            val quantifiedValues = getQuantifiedValues(quantifiedPredicate, variable, state).toSet
+            variable.sort.values.forall { quantifiedValues.contains(_) }
+          }
+        case exists: Exists =>
+          !getQuantifiedValues(quantifiedPredicate, variable, state).isEmpty
       }
+      return result
     }
 
-    val values = getQuantifiedValues(quantifier, state)
-    val transformed = quantifier.child.transform {
-      //ignore the evaluation of the quantified predicate  
-      case pred: PredicateCall if (pred == quantifier.quantifiedPredicate) => True
-    }
+    val transformed =
+      if (quantifiedPredicate != null && !quantifier.child.isInstanceOf[PredicateCall]) {
+        quantifier.child.transform {
+          //ignore the evaluation of the quantified predicate  
+          case pred: PredicateCall if (pred == quantifiedPredicate) => True
+        }
+      } else {
+        quantifier.child
+      }
+
+    val quantifiedValues = getQuantifiedValues(quantifier, state)
 
     val result =
       quantifier match {
-        case forall: Forall => values.forall(value => {
-          context.setValue(forall.variable, value)
+        case forall: Forall => quantifiedValues.forall(value => {
+          context.setValue(variable, value)
           evaluateFormula(transformed, state)
         })
-        case exists: Exists => values.exists(value => {
-          context.setValue(exists.variable, value)
+        case exists: Exists => quantifiedValues.exists(value => {
+          context.setValue(variable, value)
           evaluateFormula(transformed, state)
         })
       }
@@ -239,7 +244,7 @@ class FormulaEvaluator(val model: QueryModel) extends Logging {
 
     val index = predicate.parameters.indexOf(variable)
     val otherParams = predicate.parameters.withFilter(_ != variable).map(evaluateParam(_, state))
-    val values = impl.quantifiedValues(index, otherParams)
+    val values = impl.values(index, otherParams)
     //TODO: should we check values?
     values.foreach(value => {
       if (!variable.sort.validValue(value)) {

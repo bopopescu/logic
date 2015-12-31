@@ -10,13 +10,16 @@ class FormulaEvaluatorSuite extends FunSuite {
   val evaluator = new FormulaEvaluator(QueryModel.Empty)
 
   test("test1") {
+
     val policy = parser.parsePolicy("policy/policy1")
+
     policy.rules.foreach { rule =>
       {
         val value = evaluator.evaluate(rule)
         println(s"$rule = $value")
       }
     }
+
   }
 
 }
