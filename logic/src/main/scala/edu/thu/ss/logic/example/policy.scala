@@ -13,7 +13,7 @@ class IntSort extends ISort[Int] {
 
   def parseInput(value: String): Int = value.toInt
 
-  def _validValue(value: Int): Boolean = true
+  def validValue(value: Int): Boolean = true
 }
 
 class ColumnSort extends ISort[String] {
@@ -25,7 +25,7 @@ class ColumnSort extends ISort[String] {
 
   def parseInput(value: String): String = value
 
-  def _validValue(value: String): Boolean = columns.contains(value)
+  def validValue(value: String): Boolean = columns.contains(value)
 
   override val finite = true
 
@@ -63,7 +63,11 @@ class IsTrue extends IPredicate {
 }
 
 class Output extends IPredicate {
-  def evaluate(column: String): Boolean = false
+  def evaluate(column: String): Boolean = {
+    val state = getState
+    val plan = state.plan
+    plan.output.exists { _.name == column }
+  }
 
 }
 

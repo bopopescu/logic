@@ -17,9 +17,9 @@ trait ISort[T] extends IDefinition {
 
   def parseInput(input: String): T
 
-  def validValue(value: Any): Boolean = {
+  def isValidValue(value: Any): Boolean = {
     try {
-      _validValue(value.asInstanceOf[T])
+      validValue(value.asInstanceOf[T])
     } catch {
       case t: ClassCastException =>
         t.printStackTrace()
@@ -31,7 +31,7 @@ trait ISort[T] extends IDefinition {
 
   def finite: Boolean = false
 
-  protected def _validValue(value: T): Boolean
+  protected def validValue(value: T): Boolean
 
 }
 

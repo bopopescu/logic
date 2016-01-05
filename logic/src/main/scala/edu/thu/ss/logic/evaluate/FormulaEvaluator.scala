@@ -56,6 +56,7 @@ class FormulaEvaluator(val model: QueryModel) extends Logging {
   def evaluate(formula: Formula): Boolean = {
     val value = model.initialStates.forall(evaluateFormula(formula, _))
 
+    //the context and cache are shared among all evaluations of a formula on a model (multiple initial states)
     context.clear
     model.clearCache
 
@@ -104,12 +105,14 @@ class FormulaEvaluator(val model: QueryModel) extends Logging {
         //temporal part
         case _: AG | _: EG =>
           val g = formula.asInstanceOf[UnaryFormula]
-          state.forallParent(evaluateFormula(g.child, _))
+          evaluateFormula(g.child, state) &&
+            (state.parent == null || evaluateFormula(g, state.parent))
 
         case _: AF | _: EF =>
           //child holds in one of the current plus all parent states
           val f = formula.asInstanceOf[UnaryFormula]
-          state.existsParent { evaluateFormula(f.child, _) }
+          evaluateFormula(f.child, state) ||
+            (state.parent != null && evaluateFormula(f, state.parent))
 
         case _: AU | _: EU =>
           //either right holds in the current state, or left holds in the current state and u holds in the parent state
@@ -122,11 +125,12 @@ class FormulaEvaluator(val model: QueryModel) extends Logging {
           state.parent == null || evaluateFormula(ax.child, state.parent)
         case ex: EX =>
           //the parent state must exist, and child holds in the parent state
-          state.parent != null || evaluateFormula(ex.child, state.parent)
+          state.parent != null && evaluateFormula(ex.child, state.parent)
 
         case pag: pAG =>
           //child holds in the current plus all children states
-          state.forall { evaluateFormula(pag.child, _) }
+          evaluateFormula(pag.child, state) &&
+            state.children.forall { evaluateFormula(pag, _) }
         case peg: pEG =>
           //child holds in the current state or one of the children states (if any) 
           evaluateFormula(peg.child, state) &&
@@ -138,21 +142,22 @@ class FormulaEvaluator(val model: QueryModel) extends Logging {
             (!state.children.isEmpty && state.children.forall { evaluateFormula(paf, _) })
         case pef: pEF =>
           //child holds in one of the current plus all children states
-          state.exists { evaluateFormula(pef.child, _) }
+          evaluateFormula(pef.child, state) ||
+            state.children.exists { evaluateFormula(pef, _) }
 
-        case pau: pAU =>
-          //either right holds in the current state, or left holds in the current state and pau holds in all children states (non-empty)
-          evaluateFormula(pau.right, state) ||
-            (!state.children.isEmpty && evaluateFormula(pau.left, state)
-              && state.children.forall { evaluateFormula(pau, _) })
-        case peu: pEU =>
+        case pas: pAS =>
+          //either right holds in the current state, or left holds in the current state and pas holds in all children states (non-empty)
+          evaluateFormula(pas.right, state) ||
+            (!state.children.isEmpty && evaluateFormula(pas.left, state)
+              && state.children.forall { evaluateFormula(pas, _) })
+        case pes: pES =>
           //either right holds in the current state, or left holds in the current state and pau holds in one of children states (non-empty)
-          evaluateFormula(peu.right, state) ||
-            (!state.children.isEmpty && evaluateFormula(peu.left, state)
-              && state.children.exists { evaluateFormula(peu, _) })
+          evaluateFormula(pes.right, state) ||
+            (!state.children.isEmpty && evaluateFormula(pes.left, state)
+              && state.children.exists { evaluateFormula(pes, _) })
 
         case pax: pAX =>
-          //child holds in all children states (in any)
+          //child holds in all children states (if any)
           state.children.forall { evaluateFormula(pax.child, _) }
         case pex: pEX =>
           //child holds in one of the children states (at least one, which means non-empty)
@@ -247,7 +252,7 @@ class FormulaEvaluator(val model: QueryModel) extends Logging {
     val values = impl.values(index, otherParams)
     //TODO: should we check values?
     values.foreach(value => {
-      if (!variable.sort.validValue(value)) {
+      if (!variable.sort.isValidValue(value)) {
         throw new IllegalValueException(s"$value returned by ${predicate.definition.clazz} is not a valid value of ${variable.sort.nodeName} ${variable.sort.name}.")
       }
     })

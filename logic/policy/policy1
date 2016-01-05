@@ -6,35 +6,9 @@ define function int add(int x, int y) class=edu.thu.ss.logic.example.Add
 
 define predicate isZero(int x) class=edu.thu.ss.logic.example.IsZero
 define predicate equals(int x, int y) class=edu.thu.ss.logic.example.Equals
-define predicate isTrue(bool b) class=edu.thu.ss.logic.example.IsTrue
 define predicate output(column c) class=edu.thu.ss.logic.example.Output
-define predicate isNumerical(column c) class=edu.thu.ss.logic.example.IsNumerical
-
-
-
-define formula f1 = isZero(x)
 
 #policy
-//finite sort, unqualified predicate
-r1e: exists column c. output(c)
-r1f: forall column c. output(c)
-
-//finite sort, quantified predicate
-r2e: exists column c. isNumerical(c)
-r2f: forall column c. isNumerical(c)
-
-//infinite sort, quantified predicate
-r3e: exists int x. equals(0, x)
-r3f: forall int x. equals(0, x)
-
-r0: (forall int x. isZero(x) imply equals(x, 0)) and (exists int x. equals(x, 0) and isZero(0))
-
-r1: forall int x. equals(x, 1) imply (forall int y. equals(x, y) imply (isZero(x) || isZero(y)))
-
-r2: AG (!output("c1"))
-
-r3: forall column c. output(c)
-
-r4: isZero(1) or isZero(0) or isZero(1) 
-
-r5: isZero(add(-1, 1))
+r1: forall int x. equals(x, 0) imply isZero(0)
+r2: !isZero(add(1, 1))
+r3: AG (!output("c1"))

@@ -187,15 +187,15 @@ object SimplifyPastTemporal extends SimplifyRule {
     case pEX(True) => True
     case pEX(False) => False
 
-    case pAU(True, right) => pAF(right)
-    case pAU(False, right) => False
-    case pEU(True, right) => pEF(right)
-    case pEU(False, right) => False
+    case pAS(True, right) => pAF(right)
+    case pAS(False, right) => False
+    case pES(True, right) => pEF(right)
+    case pES(False, right) => False
 
-    case pAU(left, True) => True
-    case pAU(left, False) => False
-    case pEU(left, True) => True
-    case pEU(left, False) => False
+    case pAS(left, True) => True
+    case pAS(left, False) => False
+    case pES(left, True) => True
+    case pES(left, False) => False
   }
 }
 

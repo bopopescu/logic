@@ -17,7 +17,7 @@ class BoolSortImpl extends ISort[Boolean] {
     input == True.toString()
   }
 
-  protected def _validValue(value: Boolean) = true
+  protected def validValue(value: Boolean) = true
 
   override val finite = true
 

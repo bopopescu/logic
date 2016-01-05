@@ -67,8 +67,8 @@ case class pAX(child: Formula) extends UnaryFormula with TemporalFormula {
 
 }
 
-case class pAU(left: Formula, right: Formula) extends BinaryFormula with TemporalFormula {
-  val nodeName = "pAU"
+case class pAS(left: Formula, right: Formula) extends BinaryFormula with TemporalFormula {
+  val nodeName = "pAS"
 
 }
 
@@ -87,8 +87,8 @@ case class pEX(child: Formula) extends UnaryFormula with TemporalFormula {
 
 }
 
-case class pEU(left: Formula, right: Formula) extends BinaryFormula with TemporalFormula {
-  val nodeName = "pEU"
+case class pES(left: Formula, right: Formula) extends BinaryFormula with TemporalFormula {
+  val nodeName = "pES"
 
 }
 

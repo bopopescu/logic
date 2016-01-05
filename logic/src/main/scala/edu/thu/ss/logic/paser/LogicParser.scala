@@ -41,11 +41,11 @@ trait LogicKeywords {
   val pAG = "pag"
   val pAX = "pax"
   val pAF = "paf"
-  val pAU = "pau"
+  val pAS = "pau"
   val pEG = "peg"
   val pEX = "pex"
   val pEF = "pef"
-  val pEU = "peu"
+  val pES = "peu"
 
   val FORALL = "forall"
   val EXISTS = "exists"
@@ -226,10 +226,10 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
       //TODO only keep AU
       rep1sep(parseImply, EU) ^^
       (_.reduceRight { formula.AU(_, _) }) |
-      rep1sep(parseImply, pAU) ^^
-      (_.reduceRight { formula.pAU(_, _) }) |
-      rep1sep(parseImply, pEU) ^^
-      (_.reduceRight { formula.pEU(_, _) })
+      rep1sep(parseImply, pAS) ^^
+      (_.reduceRight { formula.pAS(_, _) }) |
+      rep1sep(parseImply, pES) ^^
+      (_.reduceRight { formula.pES(_, _) })
 
   // right associative
   protected def parseImply: Parser[Formula] =

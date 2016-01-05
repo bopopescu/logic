@@ -55,7 +55,7 @@ abstract class BaseFunctionDef[T <: IBaseFunction] extends LogicDefinition with 
 
     val objs = params.map { _.asInstanceOf[AnyRef] }
     val value = evaluateMethod.invoke(impl, objs: _*)
-    if (!range.validValue(value)) {
+    if (!range.isValidValue(value)) {
       throw new IllegalValueException(s"$value returned by function ${this} is not a valid value of ${range.nodeName} ${range.name}.")
     }
     value
