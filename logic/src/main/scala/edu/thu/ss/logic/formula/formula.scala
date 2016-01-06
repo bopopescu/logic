@@ -5,6 +5,13 @@ import edu.thu.ss.logic.tree.NamedNode
 
 abstract class Formula extends TreeNode[Formula] {
 
+  def substitute(variable: Variable, value: Constant): Formula = {
+    this.transform {
+      case func: BaseFunctionCall => func.substitute(variable, value)
+    }
+
+  }
+
 }
 
 trait NamedFormula extends NamedNode {

@@ -16,6 +16,7 @@ class EvaluationContext(val model: QueryModel) {
 
   private val functionImpls = new mutable.HashMap[Symbol, IBaseFunction]
 
+  //only used when fineCache is disabled
   private val valuation = new mutable.HashMap[Symbol, Any]
 
   def clear {
@@ -49,7 +50,7 @@ class EvaluationContext(val model: QueryModel) {
 
 }
 
-class FormulaEvaluator(val model: QueryModel) extends Logging {
+class FormulaEvaluator(val model: QueryModel, val fineCache: Boolean) extends Logging {
 
   private lazy val context = new EvaluationContext(model)
 
@@ -64,7 +65,7 @@ class FormulaEvaluator(val model: QueryModel) extends Logging {
   }
 
   private def evaluateFormula(formula: Formula, state: State): Boolean = {
-    val cacheEnabled = !LogicUtils.hasValuedVariable(formula, context)
+    val cacheEnabled = fineCache || !LogicUtils.hasValuedVariable(formula, context)
 
     if (cacheEnabled) {
       val cacheResult = state.getFormula(formula)
@@ -220,8 +221,21 @@ class FormulaEvaluator(val model: QueryModel) extends Logging {
 
     val quantifiedValues = getQuantifiedValues(quantifier, state)
 
-    val result =
+    if (fineCache) {
+      //in this case, we would substitute the formula directly
       quantifier match {
+        case forall: Forall => quantifiedValues.forall(value => {
+          val substituted = transformed.substitute(variable, Constant(value))
+          evaluateFormula(substituted, state)
+        })
+        case exists: Exists => quantifiedValues.exists(value => {
+          val substituted = transformed.substitute(variable, Constant(value))
+          evaluateFormula(substituted, state)
+        })
+      }
+    } else {
+      //otherwise, formula with free variables is not cached, and we store variable values into context
+      val result = quantifier match {
         case forall: Forall => quantifiedValues.forall(value => {
           context.setValue(variable, value)
           evaluateFormula(transformed, state)
@@ -231,8 +245,9 @@ class FormulaEvaluator(val model: QueryModel) extends Logging {
           evaluateFormula(transformed, state)
         })
       }
-    context.removeValue(quantifier.variable)
-    result
+      context.removeValue(quantifier.variable)
+      result
+    }
 
   }
 

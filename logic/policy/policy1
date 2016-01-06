@@ -12,3 +12,4 @@ define predicate output(column c) class=edu.thu.ss.logic.example.Output
 r1: forall int x. equals(x, 0) imply isZero(0)
 r2: !isZero(add(1, 1))
 r3: AG (!output("c1"))
+r4: (exists column c. output(c)) and (forall column c. output(c))

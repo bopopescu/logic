@@ -7,7 +7,7 @@ import edu.thu.ss.logic.model.QueryModel
 class FormulaEvaluatorSuite extends FunSuite {
 
   val parser = new PolicyParser
-  val evaluator = new FormulaEvaluator(QueryModel.Empty)
+  val evaluator = new FormulaEvaluator(QueryModel.Empty, true)
 
   test("test1") {
 

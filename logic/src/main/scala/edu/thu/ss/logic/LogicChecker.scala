@@ -17,7 +17,7 @@ class LogicChecker private (val policy: Policy) {
    */
   def check(plan: LogicalPlan): Option[Rule] = {
     val model = QueryModel.fromQueryPlan(plan)
-    val evaluator = new FormulaEvaluator(model)
+    val evaluator = new FormulaEvaluator(model, true)
 
     policy.rules.foreach { rule =>
       if (!evaluator.evaluate(rule.formula))

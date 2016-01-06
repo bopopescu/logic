@@ -83,14 +83,42 @@ abstract class BaseFunctionCall extends Term {
 
   override def toString = s"${definition.name}(${parameters.mkString(", ")})"
 
+  protected def substituteParams(variable: Variable, value: Constant): Seq[Term] = {
+    if (!parameters.contains(variable)) {
+      parameters
+    } else {
+      parameters.map {
+        case v: Variable if (v == variable) => value
+        case func: BaseFunctionCall => func.substitute(variable, value).asInstanceOf[BaseFunctionCall]
+        case term: Term => term
+      }
+    }
+  }
 }
 
 case class FunctionCall(definition: FunctionDef, parameters: Seq[Term]) extends BaseFunctionCall {
   def nodeName = "function"
+  override def substitute(variable: Variable, value: Constant): FunctionCall = {
+    val substitutedParams = substituteParams(variable, value)
+    if (substitutedParams.eq(parameters)) {
+      this
+    } else {
+      FunctionCall(definition, substituteParams(variable, value))
+    }
+  }
 }
 
 case class PredicateCall(definition: PredicateDef, parameters: Seq[Term]) extends BaseFunctionCall {
 
   def nodeName = "predicate"
+  override def substitute(variable: Variable, value: Constant): PredicateCall = {
+    val substitutedParams = substituteParams(variable, value)
+    if (substitutedParams.eq(parameters)) {
+      this
+    } else {
+      PredicateCall(definition, substituteParams(variable, value))
+    }
+  }
+
 }
 

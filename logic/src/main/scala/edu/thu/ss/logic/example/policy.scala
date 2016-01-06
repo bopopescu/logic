@@ -64,9 +64,7 @@ class IsTrue extends IPredicate {
 
 class Output extends IPredicate {
   def evaluate(column: String): Boolean = {
-    val state = getState
-    val plan = state.plan
-    plan.output.exists { _.name == column }
+    true
   }
 
 }
