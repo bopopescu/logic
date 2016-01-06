@@ -9,7 +9,6 @@ abstract class Formula extends TreeNode[Formula] {
     this.transform {
       case func: BaseFunctionCall => func.substitute(variable, value)
     }
-
   }
 
 }
@@ -44,6 +43,8 @@ abstract class UnaryFormula extends Formula {
 
 abstract class Term extends Formula {
   def children: Seq[Formula] = Nil
+
+  override def argString = toString
 
 }
 

@@ -30,8 +30,10 @@ abstract class Quantifier extends UnaryFormula {
   var quantifiedPredicate: PredicateCall
 
   override def toString: String = {
-    s"$nodeName ${variable.sort} ${variable.name}. $child"
+    s"$nodeName ${variable.sort} ${variable.name}. ($child)"
   }
+
+  override def simpleString = s"$nodeName ${variable.sort} ${variable.name}."
 
 }
 

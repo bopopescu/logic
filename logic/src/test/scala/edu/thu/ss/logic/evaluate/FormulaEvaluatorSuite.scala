@@ -17,6 +17,7 @@ class FormulaEvaluatorSuite extends FunSuite {
       {
         val value = evaluator.evaluate(rule)
         println(s"$rule = $value")
+        println(rule.formula.treeString)
       }
     }
 

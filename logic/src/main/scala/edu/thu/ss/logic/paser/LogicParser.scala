@@ -182,37 +182,7 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
     case name ~ formula => Rule(name, formula)
   }
 
-  def parseFormula: Parser[Formula] = parseQuantifier
-
-  protected def parseQuantifier: Parser[Formula] =
-    rep(opt(NOT | NOT_S) ~ (FORALL | EXISTS) ~ parseVariableList <~ ".") ~ parseU ^^ {
-      case list ~ u => {
-        val transformed = list.flatMap {
-          case not ~ qual ~ variables =>
-            var first = true
-            variables.map { v =>
-              val _not = if (first) {
-                first = false
-                not
-              } else {
-                None
-              }
-              (_not, qual, v)
-            }
-        }
-        transformed.foldRight(u) {
-          case ((not, qual, variable), child) =>
-            val formula = qual.toLowerCase match {
-              case FORALL => Forall(variable, child)
-              case EXISTS => Exists(variable, child)
-            }
-            not match {
-              case Some(_) => Not(formula)
-              case None => formula
-            }
-        }
-      }
-    }
+  def parseFormula: Parser[Formula] = parseU
 
   protected def parseVariableList: Parser[Seq[UnresolvedVariable]] =
     rep1sep(ident ~ ident, ",") ^^ (_.map {
@@ -257,7 +227,38 @@ object LogicParser extends StandardTokenParsers with LogicKeywords {
       pEG ~> parseUnary ^^ (formula.pEG(_)) |
       pEF ~> parseUnary ^^ (formula.pEF(_)) |
       pEX ~> parseUnary ^^ (formula.pEX(_)) |
-      parseBoolTerm
+      parseBoolTerm |
+      parseQuantifier
+
+  protected def parseQuantifier: Parser[Formula] =
+    rep(opt(NOT | NOT_S) ~ (FORALL | EXISTS) ~ parseVariableList <~ ".") ~ parseU ^^ {
+      case list ~ u => {
+        val transformed = list.flatMap {
+          case not ~ qual ~ variables =>
+            var first = true
+            variables.map { v =>
+              val _not = if (first) {
+                first = false
+                not
+              } else {
+                None
+              }
+              (_not, qual, v)
+            }
+        }
+        transformed.foldRight(u) {
+          case ((not, qual, variable), child) =>
+            val formula = qual.toLowerCase match {
+              case FORALL => Forall(variable, child)
+              case EXISTS => Exists(variable, child)
+            }
+            not match {
+              case Some(_) => Not(formula)
+              case None => formula
+            }
+        }
+      }
+    }
 
   protected def parseBoolTerm: Parser[Term] = parseFunction |
     ident ^^ (Symbol(_)) |
